@@ -43,17 +43,26 @@ def create_profil_site(request):
         if information_generale_form.is_valid():
             information_generale = information_generale_form.save()
             if gestion_site_data:
+                gestion_site_data['profil'] = information_generale.pk
                 gestion_site_form = GestionSiteSerializer(gestion_site, data=gestion_site_data) if gestion_site else GestionSiteSerializer(data=gestion_site_data)
                 if gestion_site_form.is_valid():
-                    gestion_site_form.save(profil=information_generale)
+                    gestion_site_form.save()
+                else:
+                    return Response(gestion_site_form.errors, status=status.HTTP_400_BAD_REQUEST)
             if wash_site_data:
+                wash_site_data['profil'] = information_generale.pk
                 wash_site_form = WashSiteSerializer(wash_site, data=wash_site_data) if wash_site else WashSiteSerializer(data=wash_site_data)
                 if wash_site_form.is_valid():
-                    wash_site_form.save(profil=information_generale)
+                    wash_site_form.save()
+                else:
+                    return Response(wash_site_form.errors, status=status.HTTP_400_BAD_REQUEST)
             if sante_site_data:
+                sante_site_data['profil'] = information_generale.pk
                 sante_site_form = SanteSiteSerializer(sante_site, data=sante_site_data) if sante_site else SanteSiteSerializer(data=sante_site_data)
                 if sante_site_form.is_valid():
-                    sante_site_form.save(profil=information_generale)
+                    sante_site_form.save()
+                else:
+                    return Response(sante_site_form.errors, status=status.HTTP_400_BAD_REQUEST)
             return Response({"message": "Profil du site créé avec succès"}, status=status.HTTP_201_CREATED)
         else:
             return Response(information_generale_form.errors, status=status.HTTP_400_BAD_REQUEST)

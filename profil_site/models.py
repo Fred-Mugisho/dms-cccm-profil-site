@@ -63,7 +63,6 @@ class GestionSite(models.Model):
     reunions_organisees = models.CharField(max_length=255, choices=OUI_NON_CHOICES, default="Non")
     comites_representatifs = models.CharField(max_length=255, choices=OUI_NON_CHOICES, default="Non")
     comites_gestion = models.TextField(null=True, blank=True)
-    code_enqueteur = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -90,7 +89,6 @@ class WashSite(models.Model):
     date_derniere_vidange = models.DateField(null=True, blank=True)
     eclairage_latrines_douches = models.CharField(max_length=255, choices=OUI_NON_CHOICES, default="Non")
     installation_adaptees_handicapes = models.CharField(max_length=255, choices=OUI_NON_CHOICES, default="Non")
-    code_enqueteur = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -109,10 +107,9 @@ class SanteSite(models.Model):
     service_chirurgie = models.CharField(max_length=255, choices=OUI_NON_CHOICES, default="Non")
     service_pediatrie = models.CharField(max_length=255, choices=OUI_NON_CHOICES, default="Non")
     service_prenatal = models.CharField(max_length=255, choices=OUI_NON_CHOICES, default="Non")
-    enfants_non_vaccines = models.CharField(max_length=255, choices=OUI_NON_CHOICES, default="Non")
+    enfants_non_vaccines = models.PositiveBigIntegerField(default=0)
     problemes_sante = models.TextField(null=True, blank=True)
     obsacles_acces = models.TextField(null=True, blank=True)
-    code_enqueteur = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

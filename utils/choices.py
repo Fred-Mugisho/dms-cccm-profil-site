@@ -18,6 +18,10 @@ SOURCE_EAU_CHOICES = [
 ]
 
 ELIMINATION_DECHETS_CHOICES = [
+    ("Poubelle communale", "Poubelle communale"),
+    ("Fosse à ordures", "Fosse à ordures"),
+    ("Collecte privée", "Collecte privée"),
+    ("Jeter dans la rue / lieu ouvert", "Jeter dans la rue / lieu ouvert"),
     ("Brûlage", "Brûlage"),
     ("Fosse", "Fosse"),
     ("Collecte organisée", "Collecte organisée"),
