@@ -1,0 +1,13 @@
+*.log 
+*.pot
+*.pyc
+__pycache__/
+*/__pycache__/*
+**/__pycache__/**
+.qodo
+.env
+
+dms_cccm/__pycache__/*
+profil_site/__pycache__/*
+system.log
+
