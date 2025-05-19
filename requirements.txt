@@ -1,0 +1,6 @@
+Django
+django-filter       
+markdown
+djangorestframework
+whitenoise
+mysqlclient

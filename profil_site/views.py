@@ -5,6 +5,23 @@ from .models import *
 from .serializers import *
 
 @api_view(['GET'])
+def choices_profil_site(request):
+    try:
+        data = {
+            "OUI_NON_CHOICES": OUI_NON_CHOICES_DATA,
+            "SOURCE_EAU_CHOICES": SOURCE_EAU_CHOICES_DATA,
+            "ELIMINATION_DECHETS_CHOICES": ELIMINATION_DECHETS_CHOICES_DATA,
+            "TYPE_LATRINE_CHOICES": TYPE_LATRINE_CHOICES_DATA,
+            "TYPE_DOUCHE_CHOICES": TYPE_DOUCHE_CHOICES_DATA,
+            "PROBLEMES_SANTE_CHOICES": PROBLEMES_SANTE_CHOICES_DATA,
+            "DIFFICULTE_SANTE_CHOICES": DIFFICULTE_SANTE_CHOICES_DATA,
+            "COMITES_GESTION_CHOICES": COMITES_GESTION_CHOICES_DATA,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
 def profils_sites(request, id=None):
     try:
         if id:

@@ -4,7 +4,7 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-!@#qwertyuiopasdfghjklzxcvbnm1234567890"
+SECRET_KEY = "b_32!d+_tak8*6yqs6eo85))4cqx-ipjc*6fw_wsmzi)rfxreo"
 DEVELOPPEMENT = True
 DEBUG = True
 
@@ -100,7 +100,7 @@ if DEVELOPPEMENT:
 else:
     DATABASES = {
         'default': {
-            'ENGINE': "django.db.backends.postgresql",
+            'ENGINE': "django.db.backends.mysql",
             'NAME': "dms_cccm",
             'USER': "dms_cccm",
             'PASSWORD': "dms_cccm",

@@ -24,15 +24,15 @@ class InformationGeneraleProfilSite(models.Model):
         return self.nom_site
     
     @property
-    def get_site(self):
+    def site(self):
         return None
     
     @property
-    def get_gestionnaire(self):
+    def gestionnaire(self):
         return None
     
     @property
-    def get_coordinateur(self):
+    def coordinateur(self):
         return None
     
     @property
