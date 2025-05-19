@@ -100,10 +100,10 @@ if DEVELOPPEMENT:
 else:
     DATABASES = {
         'default': {
-            'ENGINE': "django.db.backends.mysql",
-            'NAME': "dms_cccm",
-            'USER': "dms_cccm",
-            'PASSWORD': "dms_cccm",
+            'ENGINE': "django.db.backends.postgresql",
+            'NAME': "dms-cccm",
+            'USER': "dms",
+            'PASSWORD': "5(w8iQ@9]k-5",
             'HOST': "localhost",
             'PORT': "5432",
         }
