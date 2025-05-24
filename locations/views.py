@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import *
 from .serializers import *
+import openpyxl
 
 @api_view(['GET'])
 def locations(request):
@@ -12,6 +13,90 @@ def locations(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['POST', 'PUT'])
+def load_locations_from_excel(request):
+    try:
+        locations_data = request.FILES.get('locations')
+        if not locations_data:
+            return Response({"message": "Fichier des localisations manquant"}, status=status.HTTP_400_BAD_REQUEST)
+
+        wb = openpyxl.load_workbook(locations_data)
+        sheets_name = ["Provinces", "Territoires", "Secteurs", "Groupements", "Villages", "Zones de sante", "Aires de sante"]
+        
+        for sheet_name in sheets_name:
+            if sheet_name not in wb.sheetnames:
+                continue  # Ignore les feuilles non présentes
+            
+            sheet = wb[sheet_name]
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                if not row or not row[0]:  # Ignore les lignes vides
+                    continue
+                
+
+                if sheet_name == "Provinces":
+                    Province.objects.update_or_create(
+                        code=row[0], 
+                        defaults={'name': row[1]}
+                    )
+
+                elif sheet_name == "Territoires":
+                    province = Province.objects.filter(code=row[2]).first()
+                    if not province:
+                        continue  # Ou collecter les erreurs
+                    Territoire.objects.update_or_create(
+                        code=row[0], 
+                        defaults={'name': row[1], 'province': province}
+                    )
+                    
+                elif sheet_name == "Secteurs":
+                    territoire = Territoire.objects.filter(code=row[2]).first()
+                    if not territoire:
+                        continue
+                    Secteur.objects.update_or_create(
+                        code=row[0], 
+                        defaults={'name': row[1], 'territoire': territoire}
+                    )
+
+                elif sheet_name == "Groupements":
+                    secteur = Secteur.objects.filter(code=row[2]).first()
+                    if not secteur:
+                        continue
+                    Groupement.objects.update_or_create(
+                        code=row[0], 
+                        defaults={'name': row[1], 'secteur': secteur}
+                    )
+
+                elif sheet_name == "Villages":
+                    groupement = Groupement.objects.filter(code=row[2]).first()
+                    if not groupement:
+                        continue
+                    Village.objects.update_or_create(
+                        code=row[0], 
+                        defaults={'name': row[1], 'groupement': groupement, 'latitude': row[3], 'longitude': row[4]}
+                    )
+
+                elif sheet_name == "Zones de sante":
+                    territoire = Territoire.objects.filter(code=row[2]).first()
+                    if not territoire:
+                        continue
+                    ZoneSante.objects.update_or_create(
+                        code=row[0], 
+                        defaults={'name': row[1], 'territoire': territoire, 'latitude': row[3], 'longitude': row[4]}
+                    )
+                    
+                elif sheet_name == "Aires de sante":
+                    health_zone = ZoneSante.objects.filter(code=row[2]).first()
+                    if not health_zone:
+                        continue
+                    AireSante.objects.update_or_create(
+                        code=row[0], 
+                        defaults={'name': row[1], 'health_zone': health_zone, 'latitude': row[3], 'longitude': row[4]}
+                    )
+
+        return Response({"message": "Les données des localisations ont été chargées avec succès"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": f"Erreur : {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 @api_view(['GET'])
 def get_province(request, id):

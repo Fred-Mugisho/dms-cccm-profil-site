@@ -4,8 +4,8 @@ from rest_framework import serializers
 class ProvinceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Province
-        fields = ['id', 'name', 'code', 'territoires', 'zones_sante']
-        read_only_fields = ['territoires', 'zones_sante']
+        fields = ['id', 'name', 'code', 'territoires']
+        read_only_fields = ['territoires']
         
 class ProvinceFormSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,8 +15,8 @@ class ProvinceFormSerializer(serializers.ModelSerializer):
 class TerritoireSerializer(serializers.ModelSerializer):
     class Meta:
         model = Territoire
-        fields = ['id', 'name', 'code', 'secteurs']
-        read_only_fields = ['secteurs']
+        fields = ['id', 'name', 'code', 'secteurs', 'zones_sante']
+        read_only_fields = ['secteurs', 'zones_sante']
         
 class TerritoireFormSerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,34 +48,32 @@ class GroupementFormSerializer(serializers.ModelSerializer):
 class VillageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Village
-        fields = ['id', 'name', 'code']
+        fields = ['id', 'name', 'code', 'latitude', 'longitude']
         
 class VillageFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = Village
-        fields = ['id', 'groupement', 'name', 'code']
+        fields = ['id', 'groupement', 'name', 'code', 'latitude', 'longitude']
         
 class ZoneSanteSerializer(serializers.ModelSerializer):
-    province = ProvinceSerializer()
     class Meta:
         model = ZoneSante
-        fields = ['id', 'name', 'code', 'province']
-        read_only_fields = ['province']
+        fields = ['id', 'name', 'code', 'aires_sante', 'latitude', 'longitude']
         
 class ZoneSanteFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = ZoneSante
-        fields = ['id', 'province', 'name', 'code']
+        fields = ['id', 'province', 'name', 'code', 'latitude', 'longitude']
         
 class AireSanteSerializer(serializers.ModelSerializer):
     class Meta:
         model = AireSante
-        fields = ['id', 'name', 'code']
+        fields = ['id', 'name', 'code', 'latitude', 'longitude']
         
 class AireSanteFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = AireSante
-        fields = ['id', 'zone_sante', 'name', 'code']
+        fields = ['id', 'zone_sante', 'name', 'code', 'latitude', 'longitude']
         
 class LimiteAdministrativeSerializer(serializers.ModelSerializer):
     class Meta:

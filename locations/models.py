@@ -17,12 +17,6 @@ class Province(models.Model):
         from .serializers import TerritoireSerializer
         terrs = Territoire.objects.filter(province=self)
         return TerritoireSerializer(terrs, many=True).data
-    
-    @property
-    def zones_sante(self):
-        from .serializers import ZoneSanteSerializer
-        zones = ZoneSante.objects.filter(province=self)
-        return ZoneSanteSerializer(zones, many=True).data
 
 class Territoire(models.Model):
     name = models.CharField(max_length=100)
@@ -40,6 +34,12 @@ class Territoire(models.Model):
         from .serializers import SecteurSerializer
         secs = Secteur.objects.filter(territoire=self)
         return SecteurSerializer(secs, many=True).data
+    
+    @property
+    def zones_sante(self):
+        from .serializers import ZoneSanteSerializer
+        zones = ZoneSante.objects.filter(territoire=self)
+        return ZoneSanteSerializer(zones, many=True).data
 
 class Secteur(models.Model):  # Chefferie, secteur, ou commune
     name = models.CharField(max_length=100)
@@ -92,7 +92,7 @@ class Village(models.Model):
 class ZoneSante(models.Model):  # Zone de santé
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=255, unique=True)
-    province = models.ForeignKey(Province, on_delete=models.CASCADE)
+    territoire = models.ForeignKey(Territoire, on_delete=models.CASCADE)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     
