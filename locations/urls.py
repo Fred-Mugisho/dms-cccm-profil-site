@@ -32,4 +32,8 @@ urlpatterns = [
     path('get_aire_sante/<int:id>/', views.get_aire_sante, name='get_aire_sante'),
     path('create_aire_sante/', views.create_update_aire_sante, name='create_aire_sante'),
     path('update_aire_sante/<int:id>', views.create_update_aire_sante, name='update_aire_sante'),
+    
+    path('import_data_cccm_from_excel/', views.import_data_cccm_from_excel_v2, name='import_data_cccm_from_excel'),
+    path('export_data_import_excel/', views.export_data_import_excel, name='export_data_import_excel'),
+    path('situation_par_site/', views.situation_par_site, name='situation_par_site'),
 ]

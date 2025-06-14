@@ -85,3 +85,8 @@ class LimiteAdministrativeFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = LimiteAdministrative
         fields = ['id', 'parent', 'name', 'code', 'level', 'latitude', 'longitude', 'limite']
+        
+class DataImportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DataImport
+        fields = '__all__'

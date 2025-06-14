@@ -152,3 +152,40 @@ class LimiteAdministrative(models.Model):
         from .serializers import LimiteAdministrativeSerializer
         limites = LimiteAdministrative.objects.filter(parent=self)
         return LimiteAdministrativeSerializer(limites, many=True).data
+    
+class DataImport(models.Model):
+    province = models.CharField(max_length=300, null=True, blank=True)
+    code_province = models.CharField(max_length=300, null=True, blank=True)
+    territoire = models.CharField(max_length=300, null=True, blank=True)
+    code_territoire = models.CharField(max_length=300, null=True, blank=True)
+    zone_sante = models.CharField(max_length=300, null=True, blank=True)
+    code_zone_sante = models.CharField(max_length=300, null=True, blank=True)
+    type_site = models.CharField(max_length=300, null=True, blank=True)
+    longitude = models.DecimalField(decimal_places=6, max_digits=9, null=True, blank=True)
+    latitude = models.DecimalField(decimal_places=6, max_digits=9, null=True, blank=True)
+    
+    code_site = models.CharField(max_length=300, null=True, blank=True)
+    nom_site = models.CharField(max_length=300)
+    
+    type_mouvement = models.CharField(max_length=300, default="entree_initiale")
+    menages = models.PositiveBigIntegerField(default=0)
+    individus = models.PositiveBigIntegerField(default=0)
+    
+    individus_0_4_f = models.PositiveBigIntegerField(default=0)
+    individus_5_11_f = models.PositiveBigIntegerField(default=0)
+    individus_12_17_f = models.PositiveBigIntegerField(default=0)
+    individus_18_24_f = models.PositiveBigIntegerField(default=0)
+    individus_25_59_f = models.PositiveBigIntegerField(default=0)
+    individus_60_f = models.PositiveBigIntegerField(default=0)
+    
+    individus_0_4_h = models.PositiveBigIntegerField(default=0)
+    individus_5_11_h = models.PositiveBigIntegerField(default=0)
+    individus_12_17_h = models.PositiveBigIntegerField(default=0)
+    individus_18_24_h = models.PositiveBigIntegerField(default=0)
+    individus_25_59_h = models.PositiveBigIntegerField(default=0)
+    individus_60_h = models.PositiveBigIntegerField(default=0)
+    date_mise_a_jour = models.DateField()
+    
+    def __str__(self):
+        return self.nom_site
+    

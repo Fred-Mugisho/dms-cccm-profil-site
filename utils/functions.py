@@ -10,7 +10,14 @@ from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('system_log.log'),
+        logging.StreamHandler()
+    ]
+)
 
 def password_validator(password: str):
     special_chars = "$@#%&"
@@ -189,4 +196,87 @@ class ImageCompressor:
             print(f"Erreur lors de la compression de l'image : {e}")
             return self.image  # Retourner l'image originale en cas d'échec
 
+def validate_level_location(location_type, parent):
+    allowed_parents = {
+        'pays': [],
+        'province': ['pays'],
+        'territoire': ['province'],
+        'ville': ['province'],
+        'commune': ['ville'],
+        'secteur': ['territoire'],
+        'groupement': ['secteur'],
+        'quartier': ['commune'],
+        'avenue': ['quartier'],
+        'village': ['groupement'],
+        'zone': ['territoire', 'ville'],
+        'aire': ['zone'],
+    }
 
+    expected_parent_types = allowed_parents.get(location_type)
+
+    if expected_parent_types is None:
+        return False, "Type de localisation non reconnu"
+
+    if not expected_parent_types:
+        # Cas du pays (pas de parent attendu)
+        if parent is None:
+            return True, ""
+        else:
+            return False, "Le pays ne peut pas avoir de parent"
+
+    if parent is None:
+        return False, f"{location_type.capitalize()} doit avoir un parent de type {' ou '.join(expected_parent_types)}"
+
+    if parent.type in expected_parent_types:
+        return True, ""
+
+    return False, f"{location_type.capitalize()} ne peut avoir qu'un parent de type {' ou '.join(expected_parent_types)}"
+
+# Fonctions utilitaires optimisées
+def safe_int(value):
+    """Conversion sécurisée en entier"""
+    if value is None or value == '':
+        return 0
+    try:
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return 0
+        return int(float(value))
+    except (TypeError, ValueError):
+        return 0
+
+def safe_str(value):
+    """Conversion sécurisée en chaîne"""
+    if value is None:
+        return ""
+    return str(value).strip()
+
+def safe_date(value):
+    """Conversion sécurisée en date ISO"""
+    if value is None:
+        return None
+    
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    
+    try:
+        # Tentative de parsing de différents formats
+        date_formats = [
+            "%Y-%m-%d",
+            "%d/%m/%Y",
+            "%d-%m-%Y",
+            "%Y/%m/%d"
+        ]
+        
+        value_str = str(value).strip()
+        for fmt in date_formats:
+            try:
+                return datetime.strptime(value_str, fmt).date().isoformat()
+            except ValueError:
+                continue
+                
+        return None
+    except Exception as e:
+        print(f"Erreur lors de la conversion de la date '{value}': {e}")
+        return None
