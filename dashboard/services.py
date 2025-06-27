@@ -7,7 +7,6 @@ from urllib3.util.retry import Retry
 from requests.exceptions import ChunkedEncodingError
 from http.client import IncompleteRead
 
-from django.conf import settings
 from datetime import datetime, timedelta
 from .models import HistoriqueSynchro, CoordonneesSite, MouvementDeplace
 
@@ -68,26 +67,48 @@ class DataSyncService:
         count = 0
         for movement in data_movements:
             try:
-                age_data = {
-                    'individu_tranche_age_0_4_f': 0,
-                    'individu_tranche_age_5_11_f': 0,
-                    'individu_tranche_age_12_17_f': 0,
-                    'individu_tranche_age_18_24_f': 0,
-                    'individu_tranche_age_25_59_f': 0,
-                    'individu_tranche_age_60_f': 0,
-                    'individu_tranche_age_0_4_h': 0,
-                    'individu_tranche_age_5_11_h': 0,
-                    'individu_tranche_age_12_17_h': 0,
-                    'individu_tranche_age_18_24_h': 0,
-                    'individu_tranche_age_25_59_h': 0,
-                    'individu_tranche_age_60_h': 0,
-                }
+                individu_tranche_age_0_4_f = 0
+                individu_tranche_age_5_11_f = 0
+                individu_tranche_age_12_17_f = 0
+                individu_tranche_age_18_24_f = 0
+                individu_tranche_age_25_59_f = 0
+                individu_tranche_age_60_f = 0
+                individu_tranche_age_0_4_h = 0
+                individu_tranche_age_5_11_h = 0
+                individu_tranche_age_12_17_h = 0
+                individu_tranche_age_18_24_h = 0
+                individu_tranche_age_25_59_h = 0
+                individu_tranche_age_60_h = 0
                 for tranche in movement.get("individu_tranche_age", []):
                     sexe = tranche.get("sexe")
-                    age = tranche.get("tranche_age")
-                    key = f"individu_tranche_age_{age.replace('+', '60')}_{sexe[0]}"
-                    if key in age_data:
-                        age_data[key] = int(tranche.get("individus", 0))
+                    tranche_age = tranche.get("tranche_age")
+                    individus = int(tranche.get("individus", 0))
+                    if sexe == 'femme':
+                        if tranche_age == '0-4':
+                            individu_tranche_age_0_4_f += individus
+                        elif tranche_age == '5-11':
+                            individu_tranche_age_5_11_f += individus
+                        elif tranche_age == '12-17':
+                            individu_tranche_age_12_17_f += individus
+                        elif tranche_age == '18-24':
+                            individu_tranche_age_18_24_f += individus
+                        elif tranche_age == '25-59':
+                            individu_tranche_age_25_59_f += individus
+                        elif tranche_age == '60+':
+                            individu_tranche_age_60_f += individus
+                    elif sexe == 'homme':
+                        if tranche_age == '0-4':
+                            individu_tranche_age_0_4_h += individus
+                        elif tranche_age == '5-11':
+                            individu_tranche_age_5_11_h += individus
+                        elif tranche_age == '12-17':
+                            individu_tranche_age_12_17_h += individus
+                        elif tranche_age == '18-24':
+                            individu_tranche_age_18_24_h += individus
+                        elif tranche_age == '25-59':
+                            individu_tranche_age_25_59_h += individus
+                        elif tranche_age == '60+':
+                            individu_tranche_age_60_h += individus
 
                 site = movement.get("site", {})
                 zs = movement.get("zone_sante", {})
@@ -102,13 +123,19 @@ class DataSyncService:
                     date_enr = datetime.strptime(date_enr, "%Y-%m-%d").date() if date_enr else datetime.now().date()
                 except ValueError:
                     date_enr = datetime.now().date()
+                    
+                type_mouvement = movement.get("typemouvement", "")
+                if type_mouvement == 'donnee_brute':
+                    type_mouvement = 'entree'
+                elif type_mouvement == 'depart':
+                    type_mouvement = 'sortie'
 
                 MouvementDeplace.objects.create(
                     provenance=movement.get("provenance", ""),
                     menage=movement.get("menage", 0),
                     individus=movement.get("individus", 0),
                     personne_vivant_handicape=movement.get("personne_vivant_handicape", 0),
-                    typemouvement=movement.get("typemouvement", ""),
+                    typemouvement=type_mouvement,
                     raison=movement.get("raison", ""),
                     statutmouvement=movement.get("statutmouvement", ""),
                     province=province.get("nom", ""),
@@ -123,7 +150,18 @@ class DataSyncService:
                     activite=activite.get("id", 1),
                     enqueteur=enqueteur.get("nom", ""),
                     date_enregistrement=date_enr,
-                    **age_data
+                    individu_tranche_age_0_4_f=individu_tranche_age_0_4_f,
+                    individu_tranche_age_5_11_f=individu_tranche_age_5_11_f,
+                    individu_tranche_age_12_17_f=individu_tranche_age_12_17_f,
+                    individu_tranche_age_18_24_f=individu_tranche_age_18_24_f,
+                    individu_tranche_age_25_59_f=individu_tranche_age_25_59_f,
+                    individu_tranche_age_60_f=individu_tranche_age_60_f,
+                    individu_tranche_age_0_4_h=individu_tranche_age_0_4_h,
+                    individu_tranche_age_5_11_h=individu_tranche_age_5_11_h,
+                    individu_tranche_age_12_17_h=individu_tranche_age_12_17_h,
+                    individu_tranche_age_18_24_h=individu_tranche_age_18_24_h,
+                    individu_tranche_age_25_59_h=individu_tranche_age_25_59_h,
+                    individu_tranche_age_60_h=individu_tranche_age_60_h
                 )
                 count += 1
             except Exception as e:
@@ -155,7 +193,7 @@ class DataSyncService:
         try:
             mouvements_url = f"{self.BASE_URL}/masterlist/mouvement"
             sites_url = f"{self.BASE_URL}/site/"
-            params = {"statut_activite": "en attente"}
+            params = {"statut_activite": "valide"}
 
             resp_mvt = self.session.get(mouvements_url, params=params, timeout=60)
             resp_sites = self.session.get(sites_url, params=params, timeout=60)
