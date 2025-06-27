@@ -6,4 +6,5 @@ urlpatterns = [
     path('api/profil-site/', include('profil_site.urls')),
     path('api/locations/', include('locations.urls')),
     path('api/localisation/', include('localisation.urls')),
+    path('api/dashboard/', include('dashboard.urls')),
 ]

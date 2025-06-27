@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'profil_site',
     'locations',
     'localisation',
+    'dashboard.apps.DashboardConfig',
     
     'rest_framework',
     'corsheaders',

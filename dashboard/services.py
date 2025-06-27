@@ -1,0 +1,221 @@
+import threading
+import time
+import json
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from requests.exceptions import ChunkedEncodingError
+from http.client import IncompleteRead
+
+from django.conf import settings
+from datetime import datetime, timedelta
+from .models import HistoriqueSynchro, CoordonneesSite, MouvementDeplace
+
+import logging
+logger = logging.getLogger(__name__)
+
+class DataSyncService:
+    def __init__(self):
+        self.BASE_URL = "http://cccm.expertiserdc.com/api"
+        self.sync_interval = 30  # minutes
+        self.running = False
+        self.thread = None
+        self.session = self.get_session()
+
+    def get_session(self):
+        session = requests.Session()
+        retry = Retry(
+            total=5,
+            backoff_factor=1,
+            status_forcelist=[502, 503, 504, 522],
+            raise_on_status=False
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        return session
+
+    def clean_data_store(self):
+        try:
+            CoordonneesSite.objects.all().delete()
+            MouvementDeplace.objects.all().delete()
+            logger.info("Données nettoyées avec succès")
+        except Exception as e:
+            logger.error(f"Erreur lors du nettoyage des données: {e}")
+
+    def calculer_stats_site(self):
+        try:
+            for coordonnee in CoordonneesSite.objects.all():
+                mouvements = MouvementDeplace.objects.filter(site=coordonnee.site_name)
+                coordonnee.nombre_menages = sum(m.menage for m in mouvements)
+                coordonnee.nombre_individus = sum(m.individus for m in mouvements)
+                coordonnee.save()
+            logger.info("Statistiques des sites mises à jour")
+        except Exception as e:
+            logger.error(f"Erreur lors du calcul des statistiques: {e}")
+
+    def should_sync(self):
+        try:
+            last_sync = HistoriqueSynchro.objects.last()
+            if not last_sync:
+                return True
+            return (datetime.now() - last_sync.dernier_synchro.replace(tzinfo=None)) > timedelta(minutes=self.sync_interval)
+        except Exception as e:
+            logger.error(f"Erreur lors de la vérification de synchro: {e}")
+            return True
+
+    def sync_movements_data(self, data_movements):
+        count = 0
+        for movement in data_movements:
+            try:
+                age_data = {
+                    'individu_tranche_age_0_4_f': 0,
+                    'individu_tranche_age_5_11_f': 0,
+                    'individu_tranche_age_12_17_f': 0,
+                    'individu_tranche_age_18_24_f': 0,
+                    'individu_tranche_age_25_59_f': 0,
+                    'individu_tranche_age_60_f': 0,
+                    'individu_tranche_age_0_4_h': 0,
+                    'individu_tranche_age_5_11_h': 0,
+                    'individu_tranche_age_12_17_h': 0,
+                    'individu_tranche_age_18_24_h': 0,
+                    'individu_tranche_age_25_59_h': 0,
+                    'individu_tranche_age_60_h': 0,
+                }
+                for tranche in movement.get("individu_tranche_age", []):
+                    sexe = tranche.get("sexe")
+                    age = tranche.get("tranche_age")
+                    key = f"individu_tranche_age_{age.replace('+', '60')}_{sexe[0]}"
+                    if key in age_data:
+                        age_data[key] = int(tranche.get("individus", 0))
+
+                site = movement.get("site", {})
+                zs = movement.get("zone_sante", {})
+                territoire = zs.get("territoire", {}) if zs else {}
+                province = territoire.get("province", {}) if territoire else {}
+                org = movement.get("organisation", {})
+                enqueteur = movement.get("enqueteur", {})
+                activite = movement.get("activite", {})
+
+                date_enr = movement.get("date_enregistrement")
+                try:
+                    date_enr = datetime.strptime(date_enr, "%Y-%m-%d").date() if date_enr else datetime.now().date()
+                except ValueError:
+                    date_enr = datetime.now().date()
+
+                MouvementDeplace.objects.create(
+                    provenance=movement.get("provenance", ""),
+                    menage=movement.get("menage", 0),
+                    individus=movement.get("individus", 0),
+                    personne_vivant_handicape=movement.get("personne_vivant_handicape", 0),
+                    typemouvement=movement.get("typemouvement", ""),
+                    raison=movement.get("raison", ""),
+                    statutmouvement=movement.get("statutmouvement", ""),
+                    province=province.get("nom", ""),
+                    territoire=territoire.get("nom", ""),
+                    zone_sante=zs.get("nom", ""),
+                    site=site.get("nom", ""),
+                    type_site=site.get("type_site", ""),
+                    coordinateur_site=site.get("coordinateur", ""),
+                    gestionnaire_site=site.get("gestionnaire", ""),
+                    sous_mecanisme=bool(site.get("sous_meccanisme_cccm", 0)),
+                    organisation=org.get("nom", ""),
+                    activite=activite.get("id", 1),
+                    enqueteur=enqueteur.get("nom", ""),
+                    date_enregistrement=date_enr,
+                    **age_data
+                )
+                count += 1
+            except Exception as e:
+                logger.error(f"Erreur création mouvement: {e}")
+        logger.info(f"{count} mouvements créés")
+        return count
+
+    def sync_sites_data(self, data_sites):
+        count = 0
+        for site in data_sites:
+            try:
+                position_data = site.get("position", {})
+                CoordonneesSite.objects.create(
+                    site_name=site.get("nom", ""),
+                    type_site=site.get("type_site", ""),
+                    latitude=float(position_data.get("latitude", 0)),
+                    longitude=float(position_data.get("longitude", 0)),
+                    nombre_menages=0,
+                    nombre_individus=0,
+                )
+                count += 1
+            except Exception as e:
+                logger.error(f"Erreur création site: {e}")
+        logger.info(f"{count} sites créés")
+        return count
+
+    def perform_sync(self):
+        logger.info("Début de la synchronisation")
+        try:
+            mouvements_url = f"{self.BASE_URL}/masterlist/mouvement"
+            sites_url = f"{self.BASE_URL}/site/"
+            params = {"statut_activite": "en attente"}
+
+            resp_mvt = self.session.get(mouvements_url, params=params, timeout=60)
+            resp_sites = self.session.get(sites_url, params=params, timeout=60)
+
+            if resp_mvt.status_code == 200 and resp_sites.status_code == 200:
+                try:
+                    data_movements = json.loads(resp_mvt.content)
+                    data_sites = json.loads(resp_sites.content)
+                except (ChunkedEncodingError, IncompleteRead, json.JSONDecodeError) as e:
+                    logger.error(f"Erreur lecture JSON: {e}")
+                    return False
+
+                self.clean_data_store()
+                self.sync_movements_data(data_movements)
+                self.sync_sites_data(data_sites)
+                self.calculer_stats_site()
+                HistoriqueSynchro.objects.create()
+                logger.info("Synchronisation terminée avec succès")
+                return True
+            else:
+                logger.error(f"Erreur API: mvt={resp_mvt.status_code}, site={resp_sites.status_code}")
+                return False
+
+        except requests.RequestException as e:
+            logger.error(f"Erreur connexion API: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Erreur inconnue synchronisation: {e}")
+            return False
+
+    def sync_loop(self):
+        logger.info("Service de synchro en boucle lancé")
+        while self.running:
+            try:
+                if self.should_sync():
+                    logger.info("Synchro requise")
+                    if not self.perform_sync():
+                        time.sleep(30)
+                        continue
+                time.sleep(60 * self.sync_interval)
+            except Exception as e:
+                logger.error(f"Erreur dans la boucle: {e}")
+                time.sleep(60)
+
+    def start(self):
+        if not self.running:
+            self.running = True
+            self.thread = threading.Thread(target=self.sync_loop, daemon=True)
+            self.thread.start()
+            logger.info("Thread synchro démarré")
+
+    def stop(self):
+        self.running = False
+        if self.thread and self.thread.is_alive():
+            self.thread.join(timeout=5)
+        logger.info("Service de synchro arrêté")
+
+    def force_sync(self):
+        logger.info("Synchro forcée demandée")
+        return self.perform_sync()
+
+# Singleton global
+sync_service = DataSyncService()
