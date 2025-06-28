@@ -5,7 +5,7 @@ from datetime import date
 from .serializers import *
 from rest_framework.decorators import api_view
 # from dms_cccm import settings
-from .services import sync_service
+# from .services import sync_service
 from utils.functions import *
 
 PROVINCES_URGENTS = [
