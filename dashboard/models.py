@@ -9,6 +9,14 @@ class HistoriqueSynchro(models.Model):
 class CoordonneesSite(models.Model):
     site_name = models.CharField(max_length=255, unique=True)
     type_site = models.CharField(max_length=50)
+    
+    province = models.CharField(max_length=50, null=True, blank=True)
+    territoire = models.CharField(max_length=50, null=True, blank=True)
+    zone_sante = models.CharField(max_length=50, null=True, blank=True)
+    coordinateur_site = models.CharField(max_length=50, null=True, blank=True)
+    gestionnaire_site = models.CharField(max_length=50, null=True, blank=True)
+    sous_mecanisme = models.BooleanField(default=False)
+    
     nombre_menages = models.PositiveIntegerField(default=0)
     nombre_individus = models.PositiveIntegerField(default=0)
     latitude = models.FloatField()

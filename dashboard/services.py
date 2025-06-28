@@ -67,6 +67,10 @@ class DataSyncService:
         count = 0
         for movement in data_movements:
             try:
+                activite = movement.get("activite", {})
+                if activite.get("statut", "") != "valide":
+                    continue
+                
                 individu_tranche_age_0_4_f = 0
                 individu_tranche_age_5_11_f = 0
                 individu_tranche_age_12_17_f = 0
@@ -116,7 +120,9 @@ class DataSyncService:
                 province = territoire.get("province", {}) if territoire else {}
                 org = movement.get("organisation", {})
                 enqueteur = movement.get("enqueteur", {})
-                activite = movement.get("activite", {})
+                
+                coordinateur = enqueteur.get("coordinateur", {})
+                gestionnaire = enqueteur.get("gestionnaire", {})
 
                 date_enr = movement.get("date_enregistrement")
                 try:
@@ -137,14 +143,14 @@ class DataSyncService:
                     personne_vivant_handicape=movement.get("personne_vivant_handicape", 0),
                     typemouvement=type_mouvement,
                     raison=movement.get("raison", ""),
-                    statutmouvement=movement.get("statutmouvement", ""),
+                    statutmouvement=activite.get("statut", ""),
                     province=province.get("nom", ""),
                     territoire=territoire.get("nom", ""),
                     zone_sante=zs.get("nom", ""),
                     site=site.get("nom", ""),
                     type_site=site.get("type_site", ""),
-                    coordinateur_site=site.get("coordinateur", ""),
-                    gestionnaire_site=site.get("gestionnaire", ""),
+                    coordinateur_site=coordinateur.get("nom", ""),
+                    gestionnaire_site=gestionnaire.get("nom", ""),
                     sous_mecanisme=bool(site.get("sous_meccanisme_cccm", 0)),
                     organisation=org.get("nom", ""),
                     activite=activite.get("id", 1),
@@ -174,9 +180,21 @@ class DataSyncService:
         for site in data_sites:
             try:
                 position_data = site.get("position", {})
+                zone_sante_data = site.get("zone_sante", {})
+                territoire_data = zone_sante_data.get("territoire", {})
+                province_data = territoire_data.get("province", {})
+                coordinateur_data = site.get("coordinateur", {})
+                gestionnaire_data = site.get("gestionnaire", {})
+                sous_mecanisme = bool(site.get("sous_meccanisme_cccm", 0))
                 CoordonneesSite.objects.create(
                     site_name=site.get("nom", ""),
                     type_site=site.get("type_site", ""),
+                    province=province_data.get("nom", "") if province_data else "",
+                    territoire=territoire_data.get("nom", "") if territoire_data else "",
+                    zone_sante=zone_sante_data.get("nom", "") if zone_sante_data else "",
+                    sous_mecanisme=sous_mecanisme,
+                    coordinateur_site=coordinateur_data.get("nom", "") if coordinateur_data else "",
+                    gestionnaire_site=gestionnaire_data.get("nom", "") if gestionnaire_data else "",
                     latitude=float(position_data.get("latitude", 0)),
                     longitude=float(position_data.get("longitude", 0)),
                     nombre_menages=0,

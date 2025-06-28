@@ -4,8 +4,8 @@ from .models import *
 from datetime import date
 from .serializers import *
 from rest_framework.decorators import api_view
-from dms_cccm import settings
-from .services import sync_service
+# from dms_cccm import settings
+# from .services import sync_service
 from utils.functions import *
 
 PROVINCES_URGENTS = [
@@ -91,7 +91,10 @@ def dashboard(request):
         # sync_service.perform_sync()
         # Récupération des mouvements avec gestion d'erreur
         mouvements = MouvementDeplace.objects.all().order_by("date_enregistrement")
-
+        
+        # Recuperation des coordonnées des sites
+        coordonnees_sites = CoordonneesSite.objects.all().order_by("site_name")
+        
         # Filtres - application des filtres sur les mouvements
         province_param = request.GET.get("province")
         territoire_param = request.GET.get("territoire")
@@ -107,19 +110,26 @@ def dashboard(request):
         # Application des filtres si présents
         if province_param:
             mouvements = mouvements.filter(province=province_param)
+            coordonnees_sites = coordonnees_sites.filter(province=province_param)
         if territoire_param:
             mouvements = mouvements.filter(territoire=territoire_param)
+            coordonnees_sites = coordonnees_sites.filter(territoire=territoire_param)
         if zone_sante_param:
             mouvements = mouvements.filter(zone_sante=zone_sante_param)
+            coordonnees_sites = coordonnees_sites.filter(zone_sante=zone_sante_param)
         if site_param:
             mouvements = mouvements.filter(site=site_param)
+            coordonnees_sites = coordonnees_sites.filter(site_name=site_param)
         if coordinateur:
             mouvements = mouvements.filter(coordinateur=coordinateur)
+            coordonnees_sites = coordonnees_sites.filter(coordinateur_site=coordinateur)
         if gestionnaire_param:
             mouvements = mouvements.filter(gestionnaire=gestionnaire_param)
-        if sous_mecanisme_param:
+            coordonnees_sites = coordonnees_sites.filter(gestionnaire_site=gestionnaire_param)
+        if sous_mecanisme_param and sous_mecanisme_param in ["0", "1"]:
             sous_mecanisme = True if sous_mecanisme_param == "1" else False
             mouvements = mouvements.filter(sous_mecanisme=sous_mecanisme)
+            coordonnees_sites = coordonnees_sites.filter(sous_mecanisme=sous_mecanisme)
         if deadline_param:
             deadline = datetime.strptime(deadline_param, "%Y-%m-%d").date()
             mouvements = mouvements.filter(date_enregistrement__lte=deadline)
@@ -149,8 +159,6 @@ def dashboard(request):
         ]
         par_type_sites = [dict(type_site=t["type_site"], nombre_individus=0, nombre_menages=0, nombre_sites=0) for t in TYPES_SITES]
 
-        # Collecte des coordonnées avec gestion d'erreur
-        coordonnees_sites = CoordonneesSite.objects.all().order_by("site_name")
         coordonnees_sites_serializer = CoordonneesSiteSerializer(coordonnees_sites, many=True).data
 
         # Traitement des mouvements
@@ -172,8 +180,8 @@ def dashboard(request):
                 personnes_vivant_avec_handicaps += pvh_mvt
             elif type_mouvement in TYPES_MOUVEMENT_SORTIE:
                 sorties += pdi_mvt
-                menages += menages_mvt
-                personnes_vivant_avec_handicaps += pvh_mvt
+                menages -= menages_mvt
+                personnes_vivant_avec_handicaps -= pvh_mvt
 
             # Sexe par tranche d'âge avec gestion des attributs manquants
             tranche_map = {
@@ -287,12 +295,12 @@ def dashboard(request):
             "profil_demographique": {
                 "general": {
                     "total_pdi": total_pdi,
-                    "hommes": hommes,
-                    "femmes": femmes,
+                    "hommes": max(0, hommes),
+                    "femmes": max(0, femmes),
                     "pourcentage_hommes": pourcentage_hommes,
                     "pourcentage_femmes": pourcentage_femmes,
-                    "personnes_vivant_avec_handicaps": personnes_vivant_avec_handicaps,
-                    "menages": menages,
+                    "personnes_vivant_avec_handicaps": max(0, personnes_vivant_avec_handicaps),
+                    "menages": max(0, menages),
                     "entrees": entrees,
                     "sorties": sorties,
                 },
