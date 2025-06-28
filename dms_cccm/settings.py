@@ -1,17 +1,19 @@
 from pathlib import Path
 import os
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "b_32!d+_tak8*6yqs6eo85))4cqx-ipjc*6fw_wsmzi)rfxreo"
-DEVELOPPEMENT = True
-DEBUG = True
+env = environ.Env()
+env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
+
+SECRET_KEY = env.str('SECRET_KEY')
+DEVELOPPEMENT = env.bool('DEVELOPPEMENT', default=True)
+DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = ["*"]
-
-CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:3000", "http://localhost:3000", "http://0.0.0.0:3000"]
-APP_HOST = "http://localhost:8000"
+APP_HOST = env.str('APP_HOST')
 
 # Application definition
 
@@ -41,12 +43,15 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True  # (Désactive après test, à remplacer par les domaines autorisés)
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ["*"]
-CORS_ALLOWED_ORIGINS = [] # Remplace par l'URL du frontend
+
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS')
+CORS_ALLOWED_ORIGINS = []
 
 CORS_ALLOW_METHODS = [
     'GET',
@@ -103,12 +108,12 @@ if DEVELOPPEMENT:
 else:
     DATABASES = {
         'default': {
-            'ENGINE': "django.db.backends.postgresql",
-            'NAME': "dms-cccm",
-            'USER': "dms",
-            'PASSWORD': "5(w8iQ@9]k-5",
-            'HOST': "localhost",
-            'PORT': "5432",
+            'ENGINE': env('DATABASE_ENGINE'),
+            'NAME': env('DATABASE_NAME'),
+            'USER': env('DATABASE_USER'),
+            'PASSWORD': env('DATABASE_PASSWORD'),
+            'HOST': env('DATABASE_HOST'),
+            'PORT': env('DATABASE_PORT'),
         }
     }
 
@@ -152,6 +157,11 @@ STATIC_URL = 'static/'
 #     BASE_DIR / 'static',
 # ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")

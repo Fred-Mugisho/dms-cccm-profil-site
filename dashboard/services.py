@@ -186,19 +186,20 @@ class DataSyncService:
                 coordinateur_data = site.get("coordinateur", {})
                 gestionnaire_data = site.get("gestionnaire", {})
                 sous_mecanisme = bool(site.get("sous_meccanisme_cccm", 0))
-                CoordonneesSite.objects.create(
+                
+                CoordonneesSite.objects.update_or_create(
                     site_name=site.get("nom", ""),
-                    type_site=site.get("type_site", ""),
-                    province=province_data.get("nom", "") if province_data else "",
-                    territoire=territoire_data.get("nom", "") if territoire_data else "",
-                    zone_sante=zone_sante_data.get("nom", "") if zone_sante_data else "",
-                    sous_mecanisme=sous_mecanisme,
-                    coordinateur_site=coordinateur_data.get("nom", "") if coordinateur_data else "",
-                    gestionnaire_site=gestionnaire_data.get("nom", "") if gestionnaire_data else "",
-                    latitude=float(position_data.get("latitude", 0)),
-                    longitude=float(position_data.get("longitude", 0)),
-                    nombre_menages=0,
-                    nombre_individus=0,
+                    defaults={
+                        "type_site": site.get("type_site", ""),
+                        "province": province_data.get("nom", "") if province_data else "",
+                        "territoire": territoire_data.get("nom", "") if territoire_data else "",
+                        "zone_sante": zone_sante_data.get("nom", "") if zone_sante_data else "",
+                        "sous_mecanisme": sous_mecanisme,
+                        "coordinateur_site": coordinateur_data.get("nom", "") if coordinateur_data else "",
+                        "gestionnaire_site": gestionnaire_data.get("nom", "") if gestionnaire_data else "",
+                        "latitude": float(position_data.get("latitude", 0)),
+                        "longitude": float(position_data.get("longitude", 0)),
+                    }
                 )
                 count += 1
             except Exception as e:
