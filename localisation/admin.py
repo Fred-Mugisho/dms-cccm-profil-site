@@ -11,7 +11,7 @@ class PositionAdmin(admin.ModelAdmin):
     
 @admin.register(Localisation)
 class LocalisationAdmin(admin.ModelAdmin):
-    list_display = ['nom', 'code', 'type', 'position__latitude', 'position__longitude', 'updated_at']
-    search_fields = ['code', 'nom', 'type', 'position__latitude', 'position__longitude', 'updated_at']
+    list_display = ['nom', 'code', 'type', 'updated_at']
+    search_fields = ['code', 'nom', 'type', 'updated_at']
     list_filter = ['type']
     ordering = ['type', 'id']
