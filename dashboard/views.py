@@ -135,9 +135,8 @@ def dashboard(request):
             mouvements = mouvements.filter(date_enregistrement__lte=deadline)
 
         # Initialisation des variables
-        hommes = femmes = personnes_vivant_avec_handicaps = menages = (
-            entrees
-        ) = sorties = 0
+        hommes = femmes = personnes_vivant_avec_handicaps = menages = entrees = sorties = 0
+        enfants = adultes = personnes_agees = 0
 
         # Copie profonde des structures pour éviter les modifications des constantes
         tendances_deplacement_12_mois = [dict(mois=m["mois"], annee=deadline.year, entrees=0, sorties=0) for m in MOIS_ANNEE]
@@ -219,11 +218,23 @@ def dashboard(request):
                     tranche["femmes"] += f
                     hommes += h
                     femmes += f
+                    if tranche["tranche"] in ["0-4", "5-11", "12-17"]:
+                        enfants += h + f
+                    elif tranche["tranche"] in ["18-24", "25-59"]:
+                        adultes += h + f
+                    elif tranche["tranche"] == "60+":
+                        personnes_agees += h + f
                 elif type_mouvement in TYPES_MOUVEMENT_SORTIE:
                     tranche["hommes"] -= h
                     tranche["femmes"] -= f
                     hommes -= h
                     femmes -= f
+                    if tranche["tranche"] in ["0-4", "5-11", "12-17"]:
+                        enfants -= h + f
+                    elif tranche["tranche"] in ["18-24", "25-59"]:
+                        adultes -= h + f
+                    elif tranche["tranche"] == "60+":
+                        personnes_agees -= h + f
 
             # Classification par type de mouvement
             if type_mouvement in TYPES_MOUVEMENT_ENTREE:
@@ -231,6 +242,7 @@ def dashboard(request):
                     if type_mouvement == type_mvt["type_mouvement"]:
                         type_mvt["nombre"] += m.individus
                         break
+                    
             elif type_mouvement in TYPES_MOUVEMENT_SORTIE:
                 for type_mvt in repartition_par_type_sortie:
                     if type_mouvement == type_mvt["type_mouvement"]:
@@ -303,6 +315,9 @@ def dashboard(request):
                     "menages": max(0, menages),
                     "entrees": entrees,
                     "sorties": sorties,
+                    "adultes": max(0, adultes),
+                    "enfants": max(0, enfants),
+                    "personnes_agees": max(0, personnes_agees),
                 },
                 "par_type_sites": par_type_sites,
                 "repartition_par_tranche_age": repartition_par_tranche_age,
