@@ -5,7 +5,7 @@ from datetime import date
 from .serializers import *
 from rest_framework.decorators import api_view
 # from dms_cccm import settings
-# from .services import sync_service
+from .services import sync_service
 from utils.functions import *
 
 PROVINCES_URGENTS = [
@@ -330,7 +330,20 @@ def dashboard(request):
             "coordonnees_sites": coordonnees_sites_serializer,
         }
         return Response(response, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"message": f"Erreur serveur: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
+@api_view(["GET"])
+def refresh_dashboard(request):
+    try:
+        sync_service.perform_sync()
+        return Response(
+            {"message": "Données du tableau de bord rafraîchies avec succès."},
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         return Response(
             {"message": f"Erreur serveur: {str(e)}"},
