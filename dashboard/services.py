@@ -191,6 +191,7 @@ class DataSyncService:
                     site_name=site.get("nom", ""),
                     defaults={
                         "type_site": site.get("type_site", ""),
+                        "url_map": site.get("url_map", ""),
                         "province": province_data.get("nom", "") if province_data else "",
                         "territoire": territoire_data.get("nom", "") if territoire_data else "",
                         "zone_sante": zone_sante_data.get("nom", "") if zone_sante_data else "",

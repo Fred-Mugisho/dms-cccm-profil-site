@@ -9,6 +9,7 @@ class HistoriqueSynchro(models.Model):
 class CoordonneesSite(models.Model):
     site_name = models.CharField(max_length=255, unique=True)
     type_site = models.CharField(max_length=50)
+    url_map = models.URLField(null=True, blank=True)
     
     province = models.CharField(max_length=50, null=True, blank=True)
     territoire = models.CharField(max_length=50, null=True, blank=True)
