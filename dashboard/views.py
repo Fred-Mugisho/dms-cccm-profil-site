@@ -121,10 +121,10 @@ def dashboard(request):
             mouvements = mouvements.filter(site=site_param)
             coordonnees_sites = coordonnees_sites.filter(site_name=site_param)
         if coordinateur:
-            mouvements = mouvements.filter(coordinateur=coordinateur)
+            mouvements = mouvements.filter(coordinateur_site=coordinateur)
             coordonnees_sites = coordonnees_sites.filter(coordinateur_site=coordinateur)
         if gestionnaire_param:
-            mouvements = mouvements.filter(gestionnaire=gestionnaire_param)
+            mouvements = mouvements.filter(gestionnaire_site=gestionnaire_param)
             coordonnees_sites = coordonnees_sites.filter(gestionnaire_site=gestionnaire_param)
         if sous_mecanisme_param and sous_mecanisme_param in ["0", "1"]:
             sous_mecanisme = True if sous_mecanisme_param == "1" else False
