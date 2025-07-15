@@ -297,6 +297,76 @@ class DemographicDataExtractor:
         '18_59_to_25_59': 0.6
     }
     
+    # Valeurs brutes (%)
+    H0_4 = 19.8
+    H5_11 = 15.9
+    H12_17 = 19.34
+    H18_24 = 12.35
+    H25_59 = 28.81  # corrigé (41.16 - 12.35)
+    H60 = 3.80
+
+    F0_4 = 19.3
+    F5_11 = 15.5
+    F12_17 = 18.1
+    F18_24 = 12.57
+    F25_59 = 29.33  # corrigé (41.9 - 12.57)
+    F60 = 4.2
+
+    # Moyenne homme/femme par tranche (pour calcul du total uniquement)
+    TRANCHE_DISTRIBUTION = {
+        '0_4': (H0_4 + F0_4) / 2,
+        '5_11': (H5_11 + F5_11) / 2,
+        '12_17': (H12_17 + F12_17) / 2,
+        '18_24': (H18_24 + F18_24) / 2,
+        '25_59': (H25_59 + F25_59) / 2,
+        '60': (H60 + F60) / 2,
+    }
+
+    # Répartition homme/femme pour chaque tranche
+    SEX_RATIO = {
+        '0_4': (H0_4, F0_4),
+        '5_11': (H5_11, F5_11),
+        '12_17': (H12_17, F12_17),
+        '18_24': (H18_24, F18_24),
+        '25_59': (H25_59, F25_59),
+        '60': (H60, F60),
+    }
+
+    @classmethod
+    def extract_demographic_data_v2(cls, row):
+        total_individus = safe_int(row[13])
+        detailed_data = {}
+        total_calcule = 0
+
+        for tranche, pct_total in cls.TRANCHE_DISTRIBUTION.items():
+            nb_tranche = (pct_total / 100) * total_individus
+
+            h_pct, f_pct = cls.SEX_RATIO[tranche]
+            total_pct = h_pct + f_pct
+
+            nb_h = round(nb_tranche * (h_pct / total_pct))
+            nb_f = round(nb_tranche * (f_pct / total_pct))
+
+            detailed_data[f"individus_{tranche}_h"] = nb_h
+            detailed_data[f"individus_{tranche}_f"] = nb_f
+
+            total_calcule += nb_h + nb_f
+
+        ecart = total_individus - total_calcule
+
+        if ecart != 0:
+            # Tentative d’ajustement sur 25_59_h, sinon 18_24_h
+            for tranche_prioritaire in ["25_59", "18_24"]:
+                cle_ajustement = f"individus_{tranche_prioritaire}_h"
+                if cle_ajustement in detailed_data:
+                    detailed_data[cle_ajustement] += ecart
+                    break
+            else:
+                # Aucun ajustement possible
+                detailed_data["ajustement_non_effectue"] = ecart
+
+        return detailed_data
+    
     @classmethod
     def extract_demographic_data(cls, row):
         """Extrait et calcule les données démographiques détaillées"""
@@ -505,28 +575,28 @@ class DataImportService:
     
     # Configuration des feuilles par ordre chronologique
     SHEETS_CONFIG = [
-        ('aout2024', '2023-05-31'),
-        ('sept2024', '2023-06-30'),
-        ('oct2024', '2023-07-31'),
-        ('nov2024', '2023-08-31'),
-        ('jan2025', '2023-09-30'),
-        ('fev2025', '2023-10-31'),
-        ('mars2025', '2023-11-30'),
-        # ('Dec2023', '2023-12-31'),
-        # ('Jan2024', '2024-01-31'),
-        # ('Fev2024', '2024-02-28'),
-        # ('Mars2024', '2024-03-31'),
-        # ('Avril2024', '2024-04-30'),
-        # ('Mai2024', '2024-05-31'),
-        # ('Juin2024', '2024-06-30'),
-        # ('Juillet2024', '2024-07-31'),
-        # ('Aout2024', '2024-08-31'),
-        # ('Sept2024', '2024-09-30'),
-        # ('Oct2024', '2024-10-31'),
-        # ('Nov2024', '2024-11-30'),
-        # ('Jan2025', '2025-01-31'),
-        # ('Fev2025', '2025-02-28'),
-        # ('Mars2025', '2025-03-31'),
+        ('Mai2023', '2023-05-31'),
+        ('Juin2023', '2023-06-30'),
+        ('Juillet2023', '2023-07-31'),
+        ('Aout2023', '2023-08-31'),
+        ('Sept2023', '2023-09-30'),
+        ('Oct2023', '2023-10-31'),
+        ('Nov2023', '2023-11-30'),
+        ('Dec2023', '2023-12-31'),
+        ('Jan2024', '2024-01-31'),
+        ('Fev2024', '2024-02-28'),
+        ('Mars2024', '2024-03-31'),
+        ('Avril2024', '2024-04-30'),
+        ('Mai2024', '2024-05-31'),
+        ('Juin2024', '2024-06-30'),
+        ('Juillet2024', '2024-07-31'),
+        ('Aout2024', '2024-08-31'),
+        ('Sept2024', '2024-09-30'),
+        ('Oct2024', '2024-10-31'),
+        ('Nov2024', '2024-11-30'),
+        ('Jan2025', '2025-01-31'),
+        ('Fev2025', '2025-02-28'),
+        ('Mars2025', '2025-03-31'),
     ]
     
     def __init__(self):
@@ -548,7 +618,7 @@ class DataImportService:
                 row_count += 1
                 
                 # Extraction des données démographiques
-                demo_data = self.extractor.extract_demographic_data(row)
+                demo_data = self.extractor.extract_demographic_data_v2(row)
                 location_data = self.location.extract_location_data(row)
                 
                 # Gestion de la date
