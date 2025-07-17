@@ -233,17 +233,32 @@ def validate_level_location(location_type, parent):
     return False, f"{location_type.capitalize()} ne peut avoir qu'un parent de type {' ou '.join(expected_parent_types)}"
 
 # Fonctions utilitaires optimisées
-def safe_int(value):
-    """Conversion sécurisée en entier"""
-    if value is None or value == '':
-        return 0
+def safe_int(val):
     try:
-        if isinstance(value, str):
-            value = value.strip()
-            if not value:
+        if val is None:
+            return 0
+        if isinstance(val, str):
+            # Nettoyage des espaces insécables, espaces normaux et autres caractères non numériques
+            val = val.replace('\xa0', '').replace('\u202f', '').replace(' ', '').strip()
+            # Si la chaîne est vide ou ne contient que des caractères non numériques, retourner 0
+            if val == '' or not re.search(r'[0-9\-\.]', val):
                 return 0
-        return int(float(value))
-    except (TypeError, ValueError):
+        return int(float(val))
+    except Exception:
+        return 0
+    
+def safe_float(val):
+    try:
+        if val is None:
+            return 0
+        if isinstance(val, str):
+            # Nettoyage des espaces insécables, espaces normaux et autres caractères non numériques
+            val = val.replace('\xa0', '').replace('\u202f', '').replace(' ', '').strip()
+            # Si la chaîne est vide ou ne contient que des caractères non numériques, retourner 0
+            if val == '' or not re.search(r'[0-9\-\.]', val):
+                return 0
+        return float(val)
+    except Exception:
         return 0
 
 def safe_str(value):

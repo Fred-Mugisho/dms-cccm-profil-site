@@ -90,3 +90,8 @@ class DataImportSerializer(serializers.ModelSerializer):
     class Meta:
         model = DataImport
         fields = '__all__'
+        
+class TemporalDataImportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TemporalDataImport
+        fields = '__all__'

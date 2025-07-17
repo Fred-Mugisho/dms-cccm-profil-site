@@ -9,6 +9,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
 from collections import defaultdict
 from utils.functions import *
+from django.forms.models import model_to_dict
 
 @api_view(['GET'])
 def locations(request):
@@ -436,8 +437,8 @@ class LocationDataExtractor:
                 'zone_sante': safe_str(row[5]),
                 'code_zone_sante': safe_str(row[6]),
                 'type_site': safe_str(row[9]),
-                'longitude': safe_str(row[10]),
-                'latitude': safe_str(row[11]),
+                'longitude': safe_float(row[10]),
+                'latitude': safe_float(row[11]),
             }
             return location_data
         except Exception as e:
@@ -597,6 +598,8 @@ class DataImportService:
         ('Jan2025', '2025-01-31'),
         ('Fev2025', '2025-02-28'),
         ('Mars2025', '2025-03-31'),
+        # ('DRC_Master List Data_Mai2023', '2023-05-31'),
+        # ('DRC_Master List Data_Juin2023', '2023-06-30'),
     ]
     
     def __init__(self):
@@ -622,17 +625,54 @@ class DataImportService:
                 location_data = self.location.extract_location_data(row)
                 
                 # Gestion de la date
-                date_mise_a_jour = default_date
+                # date_mise_a_jour = default_date
                 
                 # Construction de l'entrée de données
+                
+                menages = max(safe_int(row[12]), 0)
+                individus = max(safe_int(row[13]), 0)
+                
                 data_entry = {
                     **location_data,
                     'nom_site': safe_str(row[7]),
                     'code_site': safe_str(row[8]),
+                    'menages': menages,
+                    'individus': individus,
+                    'date_mise_a_jour': default_date,
+                    **demo_data
+                }
+                
+                processed_data.append(data_entry)
+                
+        except Exception as e:
+            logging.error(f"Erreur lors du traitement de la feuille {sheet_name}: {e}")
+            raise
+        
+        return processed_data, row_count
+    
+    def process_sheet_data_v3(self, sheet, sheet_name, default_date):
+        """Traite les données d'une feuille Excel"""
+        processed_data = []
+        row_count = 0
+        
+        try:
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                if not row or not row[0]:
+                    continue
+                
+                row_count += 1
+                
+                # Extraction des données démographiques
+                location_data = self.location.extract_location_data(row)
+                
+                # Construction de l'entrée de données
+                data_entry = {
+                    **location_data,
+                    'nom_site': safe_str(row[7]).upper(),
+                    'code_site': safe_str(row[8]),
                     'menages': safe_int(row[12]),
                     'individus': safe_int(row[13]),
-                    'date_mise_a_jour': date_mise_a_jour,
-                    **demo_data
+                    'date_mise_a_jour': default_date,
                 }
                 
                 processed_data.append(data_entry)
@@ -775,6 +815,190 @@ def import_data_cccm_from_excel_v2(request):
             {"message": f"Erreur lors de l'importation: {str(e)}"}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+# Import des données CCCM depuis un fichier Excel 
+
+def calculer_solde(site_nom):
+    """Calcule le solde (entrées - sorties) d’un site"""
+    mouvements = TemporalDataImport.objects.filter(
+        nom_site=site_nom,
+        type_mouvement__in=["entree", "sortie"]
+    ).order_by("date_mise_a_jour")
+
+    solde_individus = solde_menages = 0
+    for m in mouvements:
+        if m.type_mouvement == "entree":
+            solde_individus += m.individus
+            solde_menages += m.menages
+        elif m.type_mouvement == "sortie":
+            solde_individus -= m.individus
+            solde_menages -= m.menages
+    return solde_individus, solde_menages
+
+
+def creer_mouvement_depuis_import(record_source, mouvement_type, individus, menages):
+    """Crée un nouveau mouvement à partir d'un record source"""
+    if individus <= 0:
+        return  # rien à faire
+    data = model_to_dict(record_source, exclude=["id"])
+    data["type_mouvement"] = mouvement_type
+    data["individus"] = individus
+    data["menages"] = menages
+
+    # Vérification doublon (optionnelle)
+    existe = TemporalDataImport.objects.filter(
+        nom_site=record_source.nom_site,
+        type_mouvement=mouvement_type,
+        individus=individus,
+        menages=menages,
+        date_mise_a_jour=record_source.date_mise_a_jour
+    ).exists()
+    if not existe:
+        instance = TemporalDataImport(**data)
+        instance.save()
+        logging.info(f"{mouvement_type.upper()} - {instance.nom_site} - {individus} individus")
+    else:
+        logging.warning(f"Doublon ignoré pour {record_source.nom_site} ({mouvement_type} - {individus})")
+
+
+@api_view(["POST", "PUT"])
+def import_data_cccm_from_excel_v3(request):
+    """Import des données CCCM depuis un fichier Excel - avec sécurité transactionnelle"""
+    try:
+        service = DataImportService()
+        file_data = request.FILES.get('file_data')
+
+        if not file_data:
+            return Response({"message": "Le fichier de données est requis"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            wb = openpyxl.load_workbook(file_data, data_only=True, read_only=True)
+        except Exception as e:
+            return Response({"message": f"Erreur lors du chargement du fichier Excel: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():  # ⛔ Début du bloc atomique
+            # Nettoyage des anciens imports
+            TemporalDataImport.objects.all().delete()
+            logging.info("Anciennes données supprimées.")
+
+            raw_stats = {}
+            total_raw_records = 0
+            data_imported = []
+            sites = set()
+            sites_unique_key = set()
+            doublons_ignores = []
+            total_records_created = 0
+
+            # Lecture et traitement des feuilles Excel
+            for sheet_name, default_date in service.SHEETS_CONFIG:
+                if sheet_name not in wb.sheetnames:
+                    logging.warning(f"Feuille {sheet_name} non trouvée")
+                    continue
+
+                sheet = wb[sheet_name]
+                processed_data, sheet_count = service.process_sheet_data_v3(sheet, sheet_name, default_date)
+
+                raw_stats[sheet_name] = sheet_count
+                total_raw_records += sheet_count
+
+                for data in processed_data:
+                    instance = TemporalDataImport(**data)
+                    if instance.nom_site == "":
+                        continue
+                    
+                    site_unique_key = f"{instance.nom_site}-{instance.date_mise_a_jour}"
+                    if site_unique_key in sites_unique_key:
+                        logging.warning(f"Doublon ignoré pour {instance.nom_site} ({instance.date_mise_a_jour})")
+                        doublons_ignores.append(site_unique_key)
+                        continue
+                    sites_unique_key.add(site_unique_key)
+                    data_imported.append(instance)
+                    sites.add(instance.nom_site)
+                    total_records_created += 1
+
+            TemporalDataImport.objects.bulk_create(data_imported)
+            logging.info(f"{len(data_imported)} enregistrements 'data_import' créés.")
+
+            # Traitement des mouvements
+            for site in sites:
+                imports_site = TemporalDataImport.objects.filter(
+                    nom_site=site,
+                    type_mouvement="data_import"
+                ).order_by('date_mise_a_jour')
+
+                for record in imports_site:
+                    solde_individus, solde_menages = calculer_solde(site)
+                    delta_individus = record.individus - solde_individus
+                    delta_menages = record.menages - solde_menages
+                    is_first = record == imports_site.first()
+
+                    if is_first:
+                        creer_mouvement_depuis_import(record, "entree", record.individus, record.menages)
+                        continue
+
+                    if delta_individus == 0 and delta_menages == 0:
+                        logging.info(f"Aucune action pour {site} ({record.date_mise_a_jour}) : aucun delta.")
+                        continue
+                    
+                    mouvement_type = "entree" if delta_individus > 0 else "sortie"
+                    creer_mouvement_depuis_import(
+                        record,
+                        mouvement_type,
+                        abs(delta_individus),
+                        abs(delta_menages)
+                    )
+
+            # Fin du bloc sécurisé ✅
+
+        # Nettoyage des imports temporaires "data_import"
+        TemporalDataImport.objects.filter(type_mouvement="data_import").delete()
+        DataImport.objects.all().delete()
+        logging.info("Doublons supprimés.")
+
+        # Génération des enregistrements enrichis (ex. DataImport)
+        goods_data = []
+        all_data_in_db = TemporalDataImport.objects.filter(
+            type_mouvement__in=["entree", "sortie"]
+        ).order_by('date_mise_a_jour')
+
+        for gd in all_data_in_db:
+            data_gd = model_to_dict(gd, exclude=["id"])
+            
+            # Extraire les données démographiques
+            demographic = gd.extract_demographic_data()
+            if demographic:
+                data_gd.update(demographic)
+
+            # Ajouter à la liste à insérer dans DataImport
+            goods_data.append(DataImport(**data_gd))
+
+        # Création en masse
+        DataImport.objects.bulk_create(goods_data)
+        logging.info(f"{len(goods_data)} enregistrements enrichis créés dans DataImport.")
+        
+        data_serialized = TemporalDataImportSerializer(all_data_in_db, many=True)
+
+        final_stats = {
+            "raw_data_by_sheet": raw_stats,
+            "total_raw_records": total_raw_records,
+            "total_records_created": total_records_created,
+            "doublons_ignores": doublons_ignores,
+            "sheets_processed": len([s for s in service.SHEETS_CONFIG if s[0] in wb.sheetnames])
+        }
+
+        return Response({
+            "stats": final_stats,
+            "count": all_data_in_db.count(),
+            "data": data_serialized.data,
+            "message": "Importation réussie"
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logging.error(f"Erreur lors de l'importation: {e}")
+        return Response({"message": f"Erreur lors de l'importation: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 @api_view(['GET'])
 def export_data_import_excel(request):
