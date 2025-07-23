@@ -290,8 +290,8 @@ def dashboard(request):
                     break
         
         total_pdi = max(0, entrees - sorties)
-        pourcentage_hommes = round((hommes / (hommes + femmes)) * 100) if total_pdi != 0 else 0
-        pourcentage_femmes = round((femmes / (hommes + femmes)) * 100) if total_pdi != 0 else 0
+        pourcentage_hommes = round((hommes / total_pdi) * 100) if total_pdi != 0 else 0
+        pourcentage_femmes = round((femmes / total_pdi) * 100) if total_pdi != 0 else 0
         # Construction de la réponse
         response = {
             "params": {
