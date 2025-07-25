@@ -231,6 +231,12 @@ def validate_level_location(location_type, parent):
         return True, ""
 
     return False, f"{location_type.capitalize()} ne peut avoir qu'un parent de type {' ou '.join(expected_parent_types)}"
+    
+def convert_to_date(date_str):
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return None
 
 # Fonctions utilitaires optimisées
 def safe_int(val):
