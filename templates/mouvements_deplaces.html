@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <title>DMS - CCCM | WNH</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800 min-h-screen">
+        <!-- Header avec utilisateur connecté -->
+        <header class="bg-white shadow-md border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 bg-green-900 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900">DMS CCCM</h1>
+                            <p class="text-sm text-gray-500">Gestion des mouvements de personnes deplacées</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Utilisateur connecté -->
+                    <div class="flex items-center space-x-4">
+                        {% comment %} <div class="hidden md:block text-right">
+                            <p class="text-sm font-medium text-gray-900">Bienvenue,</p>
+                            <p class="text-sm text-gray-500">{{ user.get_full_name|default:user.username }}</p>
+                        </div> {% endcomment %}
+                        <div class="relative">
+                            <button class="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 transition-colors duration-200">
+                                <div class="w-8 h-8 bg-green-900 rounded-full flex items-center justify-center">
+                                    <span class="text-white font-semibold text-sm">
+                                        {{ user.username.0|upper }}{{ user.username.1|upper }}
+                                    </span>
+                                </div>
+                                <span class="hidden sm:block text-xl font-medium text-gray-700">{{ user.username }}</span>
+                                {% comment %} <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg> {% endcomment %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex flex-col lg:flex-row min-h-screen">
+            <!-- Partie gauche : Tableau amélioré -->
+            <div class="w-full lg:w-3/4 p-6 lg:p-8">
+                <!-- Stats rapides -->
+                {% comment %} <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Total Enregistrements</p>
+                                <p class="text-2xl font-bold text-gray-900">{{ total_mouvements }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Total Ménages</p>
+                                <p class="text-2xl font-bold text-gray-900">
+                                    {{ total_menages }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 01-3 0 1.5 1.5 0 013 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Total Individus</p>
+                                <p class="text-2xl font-bold text-gray-900">
+                                    {{ total_individus }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div> {% endcomment %}
+
+                <!-- Tableau principal -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-900">Données des archives</h2>
+                        <p class="text-sm text-gray-500 mt-1">Liste complète des enregistrements</p>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div class="flex items-center space-x-1">
+                                            <span>N°</span>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Mois</span>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Site</span>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Ménages</span>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Individus</span>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% if not mouvements %}
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-12 text-center">
+                                            <div class="flex flex-col items-center justify-center space-y-2">
+                                                <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                </svg>
+                                                <p class="text-gray-500 font-medium">Aucune donnée disponible</p>
+                                                <p class="text-sm text-gray-400">Commencez par ajouter votre premier enregistrement</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    {% for mouvement in mouvements %}
+                                        <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center">
+                                                        <span class="text-white text-sm font-bold">{{ forloop.counter }}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="w-2 h-2 bg-blue-400 rounded-full mr-3"></div>
+                                                    <div class="text-sm font-medium text-gray-900">{{ mouvement.mois_name }}</div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                                                    <div class="text-sm text-gray-900">{{ mouvement.site.nom }}</div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    {{ mouvement.menages }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    {{ mouvement.individus }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Partie droite : Formulaire amélioré -->
+            <div class="w-full lg:w-1/4 bg-white shadow-xl border-l border-gray-200">
+                <div class="bg-green-900 px-6 py-4 text-white">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Nouveau mouvement</h3>
+                            <p class="text-green-100 text-sm">Ajouter des données</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            {% if message.tags == 'error' %}
+                                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p class="text-red-700 text-sm">{{ message }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if message.tags == 'success' %}
+                                <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        <p class="text-green-700 text-sm">{{ message }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if errors_messages %}
+                        {% for field, errors in errors_messages.items %}
+                            {% for error in errors %}
+                                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p class="text-red-700 text-sm">{{ error }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" class="space-y-6">
+                        {% csrf_token %}
+                        
+                        <!-- Champ Mois avec recherche -->
+                        <div class="relative">
+                            <label for="mois" class="block text-sm font-medium text-gray-700 mb-2">Mois</label>
+                            <div class="relative">
+                                <input type="text" 
+                                    class="block w-full border-2 rounded-lg text-sm py-3 px-4 pr-10 transition-all duration-200" 
+                                    placeholder="Rechercher un mois..."
+                                    oninput="filterSelect(this, 'mois-options')"
+                                    onfocus="showOptions('mois-options')"
+                                    autocomplete="off">
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <!-- Options dropdown -->
+                            <div id="mois-options" class="hidden absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                                <div class="option py-3 px-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 text-gray-500" data-value="">Sélectionner un mois</div>
+                                {% for m, n in mois_choices %}
+                                    <div class="option py-3 px-4 hover:bg-green-50 cursor-pointer border-b border-gray-100 hover:text-green-700 transition-colors duration-150" data-value="{{m}}">{{n}}</div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="mois" id="mois-value" required>
+                        </div>
+                    
+                        <!-- Champ Site avec recherche -->
+                        <div class="relative">
+                            <label for="site" class="block text-sm font-medium text-gray-700 mb-2">Site</label>
+                            <div class="relative">
+                                <input type="text" 
+                                    class="block w-full border-2 rounded-lg text-sm py-3 px-4 pr-10 transition-all duration-200" 
+                                    placeholder="Rechercher un site..."
+                                    oninput="filterSelect(this, 'site-options')"
+                                    onfocus="showOptions('site-options')"
+                                    autocomplete="off">
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <!-- Options dropdown -->
+                            <div id="site-options" class="hidden absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                                <div class="option py-3 px-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 text-gray-500" data-value="">Sélectionner un site</div>
+                                {% for site in sites %}
+                                    <div class="option py-3 px-4 hover:bg-green-50 cursor-pointer border-b border-gray-100 hover:text-green-700 transition-colors duration-150" data-value="{{site.id}}">{{ site.nom }}</div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="site" id="site-value" required>
+                        </div>
+                    
+                        <!-- Champ Ménages -->
+                        <div>
+                            <label for="menages" class="block text-sm font-medium text-gray-700 mb-2">Ménages</label>
+                            <div class="relative">
+                                <input type="number" id="menages" name="menages" min="0" class="block w-full border-2 rounded-lg text-sm py-3 px-4 transition-all duration-200" placeholder="Nombre de ménages" required>
+                            </div>
+                        </div>
+                    
+                        <!-- Champ Individus -->
+                        <div>
+                            <label for="individus" class="block text-sm font-medium text-gray-700 mb-2">Individus</label>
+                            <div class="relative">
+                                <input type="number" id="individus" name="individus" min="0" class="block w-full border-2 rounded-lg text-sm py-3 px-4 transition-all duration-200" placeholder="Nombre d'individus" required>
+                            </div>
+                        </div>
+                    
+                        <button type="submit" class="w-full py-3 px-4 bg-green-900 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            <div class="flex items-center justify-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                <span>Ajouter l'enregistrement</span>
+                            </div>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Fonction pour filtrer les options
+            function filterSelect(input, optionsId) {
+                const searchText = input.value.toLowerCase();
+                const options = document.getElementById(optionsId);
+                const items = options.querySelectorAll('.option');
+                
+                items.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(searchText) ? 'block' : 'none';
+                });
+                
+                showOptions(optionsId);
+            }
+            
+            // Fonction pour afficher les options
+            function showOptions(optionsId) {
+                document.getElementById(optionsId).classList.remove('hidden');
+            }
+            
+            // Gérer la sélection d'une option
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('option')) {
+                    const value = e.target.getAttribute('data-value');
+                    const text = e.target.textContent;
+                    const optionsDiv = e.target.parentElement;
+                    const container = optionsDiv.parentElement;
+                    const input = container.querySelector('input[type="text"]');
+                    const hiddenInput = container.querySelector('input[type="hidden"]');
+                    
+                    input.value = text;
+                    hiddenInput.value = value;
+                    optionsDiv.classList.add('hidden');
+                }
+            });
+            
+            // Fermer les dropdowns en cliquant ailleurs
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.relative')) {
+                    document.querySelectorAll('[id$="-options"]').forEach(options => {
+                        options.classList.add('hidden');
+                    });
+                }
+            });
+
+            // Animation pour les nouvelles entrées (optionnel)
+            document.addEventListener('DOMContentLoaded', function() {
+                const rows = document.querySelectorAll('tbody tr');
+                rows.forEach((row, index) => {
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        row.style.transition = 'all 0.5s ease';
+                        row.style.opacity = '1';
+                        row.style.transform = 'translateY(0)';
+                    }, index * 100);
+                });
+            });
+        </script>
+    </body>
+</html>

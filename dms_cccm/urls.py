@@ -8,4 +8,5 @@ urlpatterns = [
     path('api/localisation/', include('localisation.urls')),
     path('api/dashboard/', include('dashboard.urls')),
     path('api/data-import/', include('data_import.urls')),
+    path('', include('data_import.front_urls')),
 ]

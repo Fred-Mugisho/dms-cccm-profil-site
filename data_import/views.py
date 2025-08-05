@@ -1,6 +1,8 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+
+from data_import.forms import MouvementDeplaceSiteUniqueForm
 from .models import *
 from django.http import HttpResponse
 from django.db import transaction
@@ -10,6 +12,10 @@ from openpyxl.styles import Font
 from utils.functions import *
 from .utils import DataImportService
 
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.auth import authenticate, login
 
 @api_view(['POST'])
 def import_data(request):
@@ -140,3 +146,213 @@ def export_data(request):
     except Exception as e:
         logging.error(f"Erreur lors de l'exportation: {e}")
         return Response({"message": f"Erreur lors de l'exportation: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['GET'])
+def export_sites_deplaces(request):
+    try:
+        sites = SiteDeplace.objects.all().order_by('nom_site')
+        
+        logging.info(f"Nombre de sites trouvés: {sites.count()}")
+        if not sites.exists():
+            return Response(
+                {"message": "Aucune donnée à exporter"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        # Création du workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "SITES"
+        
+        entrees_individus = 0
+        sortie_individus = 0
+
+        # En-têtes
+        headers = [
+            "No",
+            "NOM SITE"
+        ]
+        
+        # Écriture des en-têtes
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+            
+        # Écriture des données
+        for index, obj in enumerate(sites):
+            row = [
+                index + 1,
+                obj.nom_site
+            ]
+            ws.append(row)
+            
+        logging.info(f"Exportation terminee. Nombre de lignes: {index + 1}")
+        
+        # Ajustement des colonnes
+        for column in ws.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            
+            adjusted_width = min(max_length + 2, 50)  # Limite à 50 caractères
+            ws.column_dimensions[column_letter].width = adjusted_width
+            
+        logging.info(f"Exportation terminee. Nombre de lignes: {index + 1}")
+
+        # Préparation de la réponse
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="data_importable_cccm.xlsx"'
+        
+        wb.save(response)
+        return response
+    except Exception as e:
+        logging.error(f"Erreur lors de l'exportation: {e}")
+        return Response({"message": f"Erreur lors de l'exportation: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+# Importer les sites
+@api_view(['POST'])
+def import_sites(request):
+    try:
+        site_file = request.FILES.get('site_file')
+        
+        if not site_file:
+            return Response({"message": "Le fichier de données est requis"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            wb = openpyxl.load_workbook(site_file, data_only=True, read_only=True)
+        except Exception as e:
+            return Response({"message": f"Erreur lors du chargement du fichier Excel: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Lecture et traitement des feuilles Excel
+        sheet = wb['SITES']
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            site, _ = SiteUnique.objects.get_or_create(
+                nom=row[1]
+            )
+            logging.info(f"Site '{site.nom}' importé avec succès.")
+        
+        logging.info("Données importées avec succès.")
+        
+        return Response({"message": "Données importées avec succès."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        logging.error(f"Erreur lors de l'importation des données: {e}")
+        return Response({"message": f"Erreur lors de l'importation des données: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def login_user(request):
+    try:
+        if request.user.is_authenticated:
+            return redirect('mouvements_deplaces')
+        
+        username = request.POST.get('username').strip()
+        password = request.POST.get('password').strip()
+                
+        if not username or not password:
+            context = {
+                'error_message': 'Veuillez fournir un nom d’utilisateur et un mot de passe.'
+            }
+            return render(request, 'login.html', context)
+        
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            return redirect('mouvements_deplaces')
+        else:
+            context = {
+                'error_message': 'Nom d’utilisateur ou mot de passe incorrect.'
+            }
+            return render(request, 'login.html', context)
+    except Exception as e:
+        return render(request, 'login.html', {'error_message': str(e)})
+    
+@api_view(['GET'])
+def generate_users(request):
+    try:
+        users_credentials = [
+            {"username": "marie", "password": "123456"},
+            {"username": "paul", "password": "654321"},
+            {"username": "julien", "password": "111111"},
+            {"username": "amina", "password": "000000"},
+            {"username": "kevin", "password": "222222"},
+            {"username": "fatou", "password": "333333"},
+            {"username": "luc", "password": "444444"},
+            {"username": "sophie", "password": "555555"},
+            {"username": "hugo", "password": "666666"},
+            {"username": "ines", "password": "777777"},
+            {"username": "adam", "password": "888888"},
+            {"username": "nadine", "password": "999999"},
+            {"username": "theo", "password": "112233"},
+            {"username": "rachel", "password": "223344"},
+            {"username": "yann", "password": "334455"},
+            {"username": "leo", "password": "445566"},
+            {"username": "claire", "password": "556677"},
+            {"username": "mohamed", "password": "667788"},
+            {"username": "lina", "password": "778899"},
+            {"username": "nathan", "password": "889900"}
+        ]
+        created_users = []
+        for user in users_credentials:
+            user_obj, _ = User.objects.get_or_create(
+                username=user["username"],
+                defaults={"email": f"{user['username']}@gmail.com"},
+            )
+            user_obj.set_password(user["password"])
+            user_obj.save()
+            created_users.append({
+                "username": user_obj.username,
+                "password": user["password"]
+            })
+        return Response({
+            "message": "Utilisateurs ajoutés avec succès.",
+            "users": created_users
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@login_required
+def mouvements_deplaces(request):
+    try:
+        user_connect = request.user
+        errors_messages = None
+        if request.method == 'POST':
+            mouvement_form = MouvementDeplaceSiteUniqueForm(request.POST)
+            if mouvement_form.is_valid():
+                f = mouvement_form.save(commit=False)
+                f.user = user_connect
+                f.save()
+                messages.success(request, 'Mouvement deplacement ajouté avec succès.')
+                return redirect('mouvements_deplaces')
+            else:
+                errors_messages = mouvement_form.errors
+                messages.error(request, 'Formulaire invalide. Veuillez corriger les erreurs.')
+        
+        if user_connect.is_superuser:
+            mouvements = MouvementDeplaceSiteUnique.objects.all().order_by('mois', 'site__nom')
+        else:
+            mouvements = MouvementDeplaceSiteUnique.objects.filter(user=user_connect).order_by('mois', 'site__nom')
+        
+        total_mouvements = mouvements.count()
+        total_menages = sum([m.menages for m in mouvements])
+        total_individus = sum([m.individus for m in mouvements])
+        
+        context = {
+            'mouvements': mouvements,
+            'mois_choices': MouvementDeplaceSiteUnique.MOIS_CHOICE,
+            'sites': SiteUnique.objects.all().order_by('nom'),
+            'errors_messages': errors_messages,
+            'total_mouvements': total_mouvements,
+            'total_menages': total_menages,
+            'total_individus': total_individus
+        }
+        return render(request, 'mouvements_deplaces.html', context)
+    except Exception as e:
+        return render(request, 'mouvements_deplaces.html', {'error_message': str(e)})
