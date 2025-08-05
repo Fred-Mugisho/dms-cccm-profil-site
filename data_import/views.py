@@ -272,7 +272,7 @@ def login_user(request):
             }
             return render(request, 'login.html', context)
     except Exception as e:
-        return render(request, 'login.html', {'error_message': str(e)})
+        return render(request, 'login.html')
     
 @api_view(['GET'])
 def generate_users(request):
