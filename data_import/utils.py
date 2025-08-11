@@ -62,6 +62,7 @@ class DataImportService:
         ("Sept2024", "2024-09-30"),
         ("Oct2024", "2024-10-31"),
         ("Nov2024", "2024-11-30"),
+        
         ("Janv2025", "2025-01-31"),
         ("Fev2025", "2025-02-28"),
         ("Mars2025", "2025-03-31"),
@@ -83,6 +84,13 @@ class DataImportService:
         "menages": 12,
         "individus": 13,
     }
+    
+    def match_date_par_mois(self, mois: str):
+        for date in self.SHEETS_CONFIG:
+            if date[0] == mois:
+                return date[1]
+
+        return None
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -137,11 +145,11 @@ class DataImportService:
     ) -> Dict[str, Any]:
         """Crée les données d'un site"""
         return {
-            "province": location_data.province,
+            "province": location_data.province.upper(),
             "code_province": location_data.code_province,
-            "territoire": location_data.territoire,
+            "territoire": location_data.territoire.upper(),
             "code_territoire": location_data.code_territoire,
-            "zone_sante": location_data.zone_sante,
+            "zone_sante": location_data.zone_sante.upper(),
             "code_zone_sante": location_data.code_zone_sante,
             "type_site": location_data.type_site,
             "longitude": location_data.longitude,
@@ -156,7 +164,7 @@ class DataImportService:
     ) -> None:
         """Sauvegarde site et mouvement"""
         try:
-            site_instance, created = SiteDeplace.objects.get_or_create(
+            site_instance, created = SiteDeplace.objects.update_or_create(
                 nom_site=site_data["nom_site"],
                 defaults=site_data,
             )

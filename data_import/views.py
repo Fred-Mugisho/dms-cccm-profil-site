@@ -17,6 +17,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from .serializers import MouvementDeplaceSiteUniqueSerializer
+import requests
+from django.db.models import Q
 
 @api_view(['POST'])
 def import_data(request):
@@ -39,7 +41,7 @@ def import_data(request):
             MouvementDeplace.objects.all().delete()
             logging.info("Anciennes données supprimées.")
             
-            print("Lecture des feuilles Excel...")
+            logging.info("Lecture des feuilles Excel...")
 
             # Lecture et traitement des feuilles Excel
             for sheet_name, default_date in service.SHEETS_CONFIG:
@@ -51,6 +53,76 @@ def import_data(request):
 
                 service.process_sheet_data_v3(sheet, sheet_name, default_date)
                 
+            variation_result = service.generate_variation_data()
+            logging.info(f"Variations: {variation_result}")
+
+            logging.info("Importation terminée.")
+
+        return Response(service.statistiques(), status=status.HTTP_200_OK)
+    except Exception as e:
+        logging.error(f"Erreur lors de l'importation: {e}")
+        return Response({"message": f"Erreur lors de l'importation: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['GET'])
+def import_data_site(request):
+    """Import des données CCCM depuis un fichier Excel - avec sécurité transactionnelle"""
+    try:
+        service = DataImportService()
+        
+        API_ENDPOINT = "http://dmscccm.wnhelp.org/api/data-import/mouvements_deplaces/"
+
+        # --- Étape 1 : Récupération des données ---
+        try:
+            response = requests.get(API_ENDPOINT, timeout=60)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Erreur lors de la récupération des données : {e}")
+            return Response(
+                {"message": "Impossible de récupérer les données depuis l'API distante."},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+        except ValueError as e:
+            logging.error(f"Erreur de parsing JSON : {e}")
+            return Response(
+                {"message": "Données invalides reçues depuis l'API distante."},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+            
+        months = set()
+        
+        # --- Étape 2 : Transaction atomique pour l'import ---
+        with transaction.atomic():  # ⛔ Début du bloc atomique
+            # Nettoyage des anciens imports
+            TemporalMouvementDeplace.objects.all().delete()
+            MouvementDeplace.objects.all().delete()
+            logging.info("Anciennes données supprimées.")
+            
+            for mouvement in data:
+                date = service.match_date_par_mois(mouvement.get('mois'))
+                nom_site = str(mouvement.get('site', {}).get('nom', '')).strip()
+                
+                if not date:
+                    logging.warning(f"Date non trouvée pour le mois : {mouvement.get('mois')}")
+                    continue
+                    
+                site_data = SiteDeplace.objects.filter(nom_site=nom_site.strip()).first()
+                if not site_data:
+                    logging.warning(f"Site non trouvé : {nom_site}")
+                    continue
+                
+                months.add(date)
+                TemporalMouvementDeplace.objects.create(
+                    site=site_data,
+                    date_mise_a_jour=date,
+                    menages=mouvement.get('menages', 0),
+                    individus=mouvement.get('individus', 0),
+                    pvh=0,
+                )
+            
+            for i, m in enumerate(sorted(months, reverse=True)):
+                print(f"{i+1} - {m}")
+            
             variation_result = service.generate_variation_data()
             logging.info(f"Variations: {variation_result}")
 
@@ -171,7 +243,8 @@ def export_sites_deplaces(request):
         # En-têtes
         headers = [
             "No",
-            "NOM SITE"
+            "PROVINCE", "CODE PROVINCE", "TERRITOIRE", "CODE TERRITOIRE", "ZONE SANTE", "CODE ZONE SANTE", 
+            "NOM SITE", "CODE SITE", "TYPE SITE", "LONGITUDE", "LATITUDE",
         ]
         
         # Écriture des en-têtes
@@ -183,7 +256,9 @@ def export_sites_deplaces(request):
         for index, obj in enumerate(sites):
             row = [
                 index + 1,
-                obj.nom_site
+                obj.province, obj.code_province, obj.territoire, obj.code_territoire, obj.zone_sante, 
+                obj.code_zone_sante, obj.nom_site, obj.code_site, obj.type_site, obj.longitude, 
+                obj.latitude
             ]
             ws.append(row)
             
@@ -235,11 +310,26 @@ def import_sites(request):
         
         # Lecture et traitement des feuilles Excel
         sheet = wb['SITES']
+        
+        SiteDeplace.objects.all().delete()
+        logging.info("Anciennes données supprimées.")
         for row in sheet.iter_rows(min_row=2, values_only=True):
-            site, _ = SiteUnique.objects.get_or_create(
-                nom=row[1]
+            site, _ = SiteDeplace.objects.get_or_create(
+                nom_site=row[7],
+                defaults={
+                    'province': row[1],
+                    'code_province': row[2],
+                    'territoire': row[3],
+                    'code_territoire': row[4],
+                    'zone_sante': row[5],
+                    'code_zone_sante': row[6],
+                    'code_site': row[8],
+                    'type_site': row[9],
+                    'longitude': row[10],
+                    'latitude': row[11],
+                }
             )
-            logging.info(f"Site '{site.nom}' importé avec succès.")
+            logging.info(f"Site '{site.nom_site}' importé avec succès.")
         
         logging.info("Données importées avec succès.")
         
