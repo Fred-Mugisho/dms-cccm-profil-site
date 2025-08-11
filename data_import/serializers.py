@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SiteDeplace, MouvementDeplace
+from .models import SiteDeplace, MouvementDeplace, SiteUnique, MouvementDeplaceSiteUnique
 
 
 class SiteDeplaceSerializer(serializers.ModelSerializer):
@@ -13,3 +13,14 @@ class MouvementDeplaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = MouvementDeplace
         fields = '__all__'
+
+class SiteUniqueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SiteUnique
+        fields = ['id', 'nom']
+        
+class MouvementDeplaceSiteUniqueSerializer(serializers.ModelSerializer):
+    site = SiteUniqueSerializer()
+    class Meta:
+        model = MouvementDeplaceSiteUnique
+        fields = "__all__"

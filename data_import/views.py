@@ -16,6 +16,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
+from .serializers import MouvementDeplaceSiteUniqueSerializer
 
 @api_view(['POST'])
 def import_data(request):
@@ -354,5 +355,14 @@ def mouvements_deplaces(request):
             'total_individus': total_individus
         }
         return render(request, 'mouvements_deplaces.html', context)
+    except Exception as e:
+        return render(request, 'mouvements_deplaces.html', {'error_message': str(e)})
+
+@api_view(['GET'])
+def mouvements_deplaces_api(request):
+    try:
+        mouvements = MouvementDeplaceSiteUnique.objects.all().order_by('site__nom')
+        serializer = MouvementDeplaceSiteUniqueSerializer(mouvements, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         return render(request, 'mouvements_deplaces.html', {'error_message': str(e)})
