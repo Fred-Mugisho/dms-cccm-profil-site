@@ -9,16 +9,16 @@ from .services import sync_service
 from utils.functions import *
 
 PROVINCES_URGENTS = [
-    {"province": "Nord-Kivu", "homme": 0, "femme": 0},
-    {"province": "Sud-Kivu", "homme": 0, "femme": 0},
-    {"province": "Ituri", "homme": 0, "femme": 0},
-    {"province": "Tanganyika", "homme": 0, "femme": 0},
-    {"province": "Mai-Ndombe", "homme": 0, "femme": 0},
-    {"province": "Kasai", "homme": 0, "femme": 0},
-    {"province": "Kasai Central", "homme": 0, "femme": 0},
-    {"province": "Haut-Uélé", "homme": 0, "femme": 0},
-    {"province": "Bas-Uélé", "homme": 0, "femme": 0},
-    {"province": "Maniema", "homme": 0, "femme": 0},
+    {"province": "nord-kivu", "homme": 0, "femme": 0},
+    {"province": "sud-kivu", "homme": 0, "femme": 0},
+    {"province": "ituri", "homme": 0, "femme": 0},
+    {"province": "tanganyika", "homme": 0, "femme": 0},
+    {"province": "mai-ndombe", "homme": 0, "femme": 0},
+    {"province": "kasai", "homme": 0, "femme": 0},
+    {"province": "kasai Central", "homme": 0, "femme": 0},
+    {"province": "haut-uélé", "homme": 0, "femme": 0},
+    {"province": "bas-uélé", "homme": 0, "femme": 0},
+    {"province": "maniema", "homme": 0, "femme": 0},
 ]
 
 TRANCHES_AGE = [
@@ -103,9 +103,13 @@ def dashboard(request):
         coordinateur = request.GET.get("coordinateur")
         gestionnaire_param = request.GET.get("gestionnaire")
         sous_mecanisme_param = request.GET.get("sous_mecanisme")
-        deadline_param = request.GET.get("deadline")
+        # deadline_param = request.GET.get("deadline")
+        date_debut_param = request.GET.get("date_debut")
+        date_fin_param = request.GET.get("date_fin")
         
-        deadline = date.today()
+        # deadline = date.today()
+        date_debut = None
+        date_fin = date.today()
 
         # Application des filtres si présents
         if province_param:
@@ -130,16 +134,19 @@ def dashboard(request):
             sous_mecanisme = True if sous_mecanisme_param == "1" else False
             mouvements = mouvements.filter(sous_mecanisme=sous_mecanisme)
             coordonnees_sites = coordonnees_sites.filter(sous_mecanisme=sous_mecanisme)
-        if deadline_param:
-            deadline = datetime.strptime(deadline_param, "%Y-%m-%d").date()
-            mouvements = mouvements.filter(date_enregistrement__lte=deadline)
+        if date_debut_param:
+            date_debut = datetime.strptime(date_debut_param, "%Y-%m-%d").date()
+            mouvements = mouvements.filter(date_enregistrement__gte=date_debut)
+        if date_fin_param:
+            date_fin = datetime.strptime(date_fin_param, "%Y-%m-%d").date()
+            mouvements = mouvements.filter(date_enregistrement__lte=date_fin)
 
         # Initialisation des variables
         hommes = femmes = personnes_vivant_avec_handicaps = menages = entrees = sorties = 0
         enfants = adultes = personnes_agees = 0
 
         # Copie profonde des structures pour éviter les modifications des constantes
-        tendances_deplacement_12_mois = [dict(mois=m["mois"], annee=deadline.year, entrees=0, sorties=0) for m in MOIS_ANNEE]
+        tendances_deplacement_12_mois = [dict(mois=m["mois"], annee=date_fin.year, entrees=0, sorties=0) for m in MOIS_ANNEE]
         repartition_par_tranche_age = [
             dict(tranche=tr["tranche"], hommes=0, femmes=0) for tr in TRANCHES_AGE
         ]
@@ -302,7 +309,8 @@ def dashboard(request):
                 "coordinateur": coordinateur,
                 "gestionnaire": gestionnaire_param,
                 "sous_mecanisme": sous_mecanisme_param,
-                "deadline": deadline_param,
+                "date_debut": date_debut_param,
+                "date_fin": date_fin_param,
             },
             "profil_demographique": {
                 "general": {

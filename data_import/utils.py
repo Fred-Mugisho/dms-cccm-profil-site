@@ -98,7 +98,7 @@ class DataImportService:
     def extract_location_data(self, row: Tuple[Any, ...]) -> LocationData:
         """Extrait les données de localisation"""
         try:
-            return LocationData(
+            location = LocationData(
                 province=safe_str(row[self.COLUMN_INDICES["province"]]).strip(),
                 code_province=safe_str(
                     row[self.COLUMN_INDICES["code_province"]]
@@ -115,6 +115,7 @@ class DataImportService:
                 longitude=safe_float(row[self.COLUMN_INDICES["longitude"]]),
                 latitude=safe_float(row[self.COLUMN_INDICES["latitude"]]),
             )
+            return location
         except Exception as e:
             raise DataImportError(f"Erreur extraction localisation: {e}")
 
@@ -145,16 +146,16 @@ class DataImportService:
     ) -> Dict[str, Any]:
         """Crée les données d'un site"""
         return {
-            "province": location_data.province.upper(),
+            "province": location_data.province.lower(),
             "code_province": location_data.code_province,
-            "territoire": location_data.territoire.upper(),
+            "territoire": location_data.territoire.lower(),
             "code_territoire": location_data.code_territoire,
-            "zone_sante": location_data.zone_sante.upper(),
+            "zone_sante": location_data.zone_sante.lower(),
             "code_zone_sante": location_data.code_zone_sante,
             "type_site": location_data.type_site,
             "longitude": location_data.longitude,
             "latitude": location_data.latitude,
-            "nom_site": safe_str(row[self.COLUMN_INDICES["nom_site"]]).strip().upper(),
+            "nom_site": safe_str(row[self.COLUMN_INDICES["nom_site"]]).strip().lower(),
             "code_site": safe_str(row[self.COLUMN_INDICES["code_site"]]).strip(),
             "sous_mecanisme": True,
         }
@@ -260,7 +261,7 @@ class DataImportService:
             sites_par_mois = {}
             for date in dates_ordered:
                 mouvements = TemporalMouvementDeplace.objects.filter(date_mise_a_jour=date)
-                sites_par_mois[date] = {m.site.nom_site.upper() for m in mouvements}  # Utilisation d'un set
+                sites_par_mois[date] = {m.site.nom_site.lower() for m in mouvements}  # Utilisation d'un set
                 
             for site in sites:
                 mouvements_site = site.mouvements_temporaire()
@@ -271,8 +272,8 @@ class DataImportService:
                 for mvt in mouvements_site:
                     if mvt_precedent is not None:
                         # Vérification si le site est fermé (absent du mois courant mais présent le mois précédent)
-                        site_present_mois_courant = site.nom_site.upper() in sites_par_mois.get(mvt.date_mise_a_jour, set())
-                        site_present_mois_precedent = site.nom_site.upper() in sites_par_mois.get(mvt_precedent.date_mise_a_jour, set())
+                        site_present_mois_courant = site.nom_site.lower() in sites_par_mois.get(mvt.date_mise_a_jour, set())
+                        site_present_mois_precedent = site.nom_site.lower() in sites_par_mois.get(mvt_precedent.date_mise_a_jour, set())
                         
                         if site_present_mois_precedent and not site_present_mois_courant:
                             # Site fermé : sortie du total cumulé

@@ -39,6 +39,7 @@ def import_data(request):
             # Nettoyage des anciens imports
             TemporalMouvementDeplace.objects.all().delete()
             MouvementDeplace.objects.all().delete()
+            SiteDeplace.objects.all().delete()
             logging.info("Anciennes données supprimées.")
             
             logging.info("Lecture des feuilles Excel...")
