@@ -271,7 +271,7 @@ def safe_str(value):
     """Conversion sécurisée en chaîne"""
     if value is None:
         return ""
-    return str(value).strip()
+    return str(value).upper().strip()
 
 def safe_date(value):
     """Conversion sécurisée en date ISO"""

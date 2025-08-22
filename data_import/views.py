@@ -10,7 +10,7 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
 from utils.functions import *
-from .utils import DataImportService
+from .utils_v2 import DataImportService
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -35,29 +35,29 @@ def import_data(request):
         except Exception as e:
             return Response({"message": f"Erreur lors du chargement du fichier Excel: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
-        with transaction.atomic():  # ⛔ Début du bloc atomique
-            # Nettoyage des anciens imports
-            TemporalMouvementDeplace.objects.all().delete()
-            MouvementDeplace.objects.all().delete()
-            SiteDeplace.objects.all().delete()
-            logging.info("Anciennes données supprimées.")
+        # with transaction.atomic():  # ⛔ Début du bloc atomique
+        # Nettoyage des anciens imports
+        TemporalMouvementDeplace.objects.all().delete()
+        MouvementDeplace.objects.all().delete()
+        SiteDeplace.objects.all().delete()
+        logging.info("Anciennes données supprimées.")
+        
+        logging.info("Lecture des feuilles Excel...")
+
+        # Lecture et traitement des feuilles Excel
+        for sheet_name, default_date in service.SHEETS_CONFIG:
+            if sheet_name not in wb.sheetnames:
+                logging.warning(f"Feuille {sheet_name} non trouvée")
+                continue
+
+            sheet = wb[sheet_name]
+
+            service.process_sheet_data_v3(sheet, sheet_name, default_date)
             
-            logging.info("Lecture des feuilles Excel...")
+        # variation_result = service.generate_variation_data()
+        # logging.info(f"Variations: {variation_result}")
 
-            # Lecture et traitement des feuilles Excel
-            for sheet_name, default_date in service.SHEETS_CONFIG:
-                if sheet_name not in wb.sheetnames:
-                    logging.warning(f"Feuille {sheet_name} non trouvée")
-                    continue
-
-                sheet = wb[sheet_name]
-
-                service.process_sheet_data_v3(sheet, sheet_name, default_date)
-                
-            variation_result = service.generate_variation_data()
-            logging.info(f"Variations: {variation_result}")
-
-            logging.info("Importation terminée.")
+        logging.info("Importation terminée.")
 
         return Response(service.statistiques(), status=status.HTTP_200_OK)
     except Exception as e:
@@ -124,8 +124,8 @@ def import_data_site(request):
             for i, m in enumerate(sorted(months, reverse=True)):
                 print(f"{i+1} - {m}")
             
-            variation_result = service.generate_variation_data()
-            logging.info(f"Variations: {variation_result}")
+            # variation_result = service.generate_variation_data()
+            # logging.info(f"Variations: {variation_result}")
 
             logging.info("Importation terminée.")
 
@@ -137,6 +137,11 @@ def import_data_site(request):
 @api_view(['GET'])
 def export_data(request):
     try:
+        sites = SiteDeplace.objects.all().order_by('nom_site')
+        number = 0
+        for site in sites:
+            number += 1
+            site.generate_code_site(number)
         mouvements = MouvementDeplace.objects.all().order_by('date_mise_a_jour')
         logging.info(f"Nombre de mouvements trouvés: {mouvements.count()}")
         if not mouvements.exists():
@@ -161,7 +166,7 @@ def export_data(request):
             "DATE", "TYPE MOUVEMENT", "MENAGES", "INDIVIDUS", 
             "0-4 F", "5-11 F", "12-17 F", "18-24 F", "25-59 F", "60+ F",
             "0-4 H", "5-11 H", "12-17 H", "18-24 H", "25-59 H", "60+ H",
-            "PERSONNES VIVANT AVEC UN HANDICAP", "SOUS MECANISME CCCM"
+            "PVH", "SOUS MECANISME CCCM", "GESTIONNAIRE", "COORDINATEUR",
         ]
         
         # Écriture des en-têtes
@@ -179,7 +184,7 @@ def export_data(request):
                 obj.site.latitude, obj.date_mise_a_jour, obj.type_mouvement, obj.menages, obj.individus, 
                 obj.individus_0_4_f, obj.individus_5_11_f, obj.individus_12_17_f, obj.individus_18_24_f, obj.individus_25_59_f, 
                 obj.individus_60_f, obj.individus_0_4_h, obj.individus_5_11_h, obj.individus_12_17_h, obj.individus_18_24_h, 
-                obj.individus_25_59_h, obj.individus_60_h, obj.pvh, mecanisme
+                obj.individus_25_59_h, obj.individus_60_h, obj.pvh, mecanisme, obj.site.gestionnaire, obj.site.coordinateur
             ]
             ws.append(row)
             

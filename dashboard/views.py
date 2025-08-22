@@ -1,12 +1,13 @@
 from rest_framework.response import Response
 from rest_framework import status
 from .models import *
-from datetime import date
+from datetime import date, timedelta
 from .serializers import *
 from rest_framework.decorators import api_view
 # from dms_cccm import settings
 from .services import sync_service
 from utils.functions import *
+from dateutil.relativedelta import relativedelta
 
 PROVINCES_URGENTS = [
     {"province": "nord-kivu", "homme": 0, "femme": 0},
@@ -135,11 +136,13 @@ def dashboard(request):
             mouvements = mouvements.filter(sous_mecanisme=sous_mecanisme)
             coordonnees_sites = coordonnees_sites.filter(sous_mecanisme=sous_mecanisme)
         if date_debut_param:
-            date_debut = datetime.strptime(date_debut_param, "%Y-%m-%d").date()
+            date_debut = datetime.strptime(date_debut_param, "%Y-%m-%d").date().replace(day=1)
             mouvements = mouvements.filter(date_enregistrement__gte=date_debut)
         if date_fin_param:
             date_fin = datetime.strptime(date_fin_param, "%Y-%m-%d").date()
-            mouvements = mouvements.filter(date_enregistrement__lte=date_fin)
+            dernier_jour_mois = date_fin.replace(day=1) + relativedelta(months=1, day=1) - timedelta(days=1)
+            
+            mouvements = mouvements.filter(date_enregistrement__lte=dernier_jour_mois)
 
         # Initialisation des variables
         hommes = femmes = personnes_vivant_avec_handicaps = menages = entrees = sorties = 0

@@ -21,9 +21,52 @@ class SiteDeplace(models.Model):
     code_site = models.CharField(max_length=300, null=True, blank=True)
     nom_site = models.CharField(max_length=300)
     sous_mecanisme = models.BooleanField(default=True)
+    gestionnaire = models.CharField(max_length=300, null=True, blank=True)
+    coordinateur = models.CharField(max_length=300, null=True, blank=True)
 
     def __str__(self):
         return self.nom_site
+    
+    def generate_code_site(self, order: int, use_administratif: bool = False):
+        """
+        Génère le code complet du site selon le format officiel.
+
+        Args:
+            order: numéro du site (1..999)
+            use_administratif: True pour format administratif, False pour format sanitaire
+
+        Returns:
+            str: code site complet
+        """
+        # SNNN : toujours 3 chiffres
+        s_number = f"S{order:03d}"
+
+        # Type de site : SP, CC ou SS
+        site_type_map = {
+            "Site Planifié": "SP",
+            "SITE SPONTANÉ": "SP",
+            "Centre Collectif": "CC",
+            "SITE COLLECTIF": "CC",
+            "Site Spontané": "SS",
+            "SITE SPONTANÉ": "SS",
+        }
+        site_type = site_type_map.get(self.type_site, "SP")  # valeur par défaut SP si non trouvé
+
+        # Gestion : SM ou HM
+        gestion_type = "SM" if self.sous_mecanisme else "HM"
+
+        if use_administratif:
+            # Format administratif : CDXXTYYSZZGAASNNN[SP/CC/SS][SM/HM]
+            code_site = f"{self.code_zone_sante}{s_number}{site_type}{gestion_type}"
+        else:
+            # Format sanitaire/humanitaire : CDXXTYYZSQQSNNN[SP/CC/SS][SM/HM]
+            code_site = f"{self.code_zone_sante}{s_number}{site_type}{gestion_type}"
+
+        ts = self.type_site.lower()
+        self.code_site = code_site
+        self.type_site = ts.title()
+        self.save(update_fields=["code_site", "type_site"])
+
 
     def deltas_menages_individus_type_mouvement(self, menages: int, individus: int):
         mouvements_site = MouvementDeplace.objects.filter(site=self)
