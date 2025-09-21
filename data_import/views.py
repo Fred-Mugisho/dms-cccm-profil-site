@@ -64,6 +64,36 @@ def import_data(request):
         logging.error(f"Erreur lors de l'importation: {e}")
         return Response({"message": f"Erreur lors de l'importation: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+@api_view(['POST'])
+@transaction.atomic
+def import_sites_from_file(request):
+    """Import des données CCCM depuis un fichier Excel - avec sécurité transactionnelle"""
+    try:
+        service = DataImportService()
+        file_data = request.FILES.get('file_data')
+
+        if not file_data:
+            return Response({"message": "Le fichier de données est requis"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            wb = openpyxl.load_workbook(file_data, data_only=True, read_only=True)
+        except Exception as e:
+            return Response({"message": f"Erreur lors du chargement du fichier Excel: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        logging.info("Lecture des feuilles Excel...")
+
+        sheet = wb["Sites"]
+
+        service.process_sheet_data_v3(sheet, "Sites", datetime.now().strftime("%Y-%m-%d"))
+
+        logging.info("Importation terminée.")
+
+        return Response(service.statistiques(), status=status.HTTP_200_OK)
+    except Exception as e:
+        logging.error(f"Erreur lors de l'importation: {e}")
+        return Response({"message": f"Erreur lors de l'importation: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
 @api_view(['GET'])
 def import_data_site(request):
     """Import des données CCCM depuis un fichier Excel - avec sécurité transactionnelle"""

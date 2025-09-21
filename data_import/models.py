@@ -4,13 +4,13 @@ from django.contrib.auth.models import User
 
 # NOUVELLE REFLEXION
 class SiteDeplace(models.Model):
-    province = models.CharField(max_length=300, null=True, blank=True)
-    code_province = models.CharField(max_length=300, null=True, blank=True)
-    territoire = models.CharField(max_length=300, null=True, blank=True)
-    code_territoire = models.CharField(max_length=300, null=True, blank=True)
-    zone_sante = models.CharField(max_length=300, null=True, blank=True)
-    code_zone_sante = models.CharField(max_length=300, null=True, blank=True)
-    type_site = models.CharField(max_length=300, null=True, blank=True)
+    province = models.CharField(max_length=300, null=True, blank=True, db_index=True)
+    code_province = models.CharField(max_length=300, null=True, blank=True, db_index=True)
+    territoire = models.CharField(max_length=300, null=True, blank=True, db_index=True)
+    code_territoire = models.CharField(max_length=300, null=True, blank=True, db_index=True)
+    zone_sante = models.CharField(max_length=300, null=True, blank=True, db_index=True)
+    code_zone_sante = models.CharField(max_length=300, null=True, blank=True, db_index=True)
+    type_site = models.CharField(max_length=300, null=True, blank=True, db_index=True)
     longitude = models.DecimalField(
         decimal_places=6, max_digits=9, null=True, blank=True
     )
@@ -18,11 +18,11 @@ class SiteDeplace(models.Model):
         decimal_places=6, max_digits=9, null=True, blank=True
     )
 
-    code_site = models.CharField(max_length=300, null=True, blank=True)
-    nom_site = models.CharField(max_length=300)
-    sous_mecanisme = models.BooleanField(default=True)
-    gestionnaire = models.CharField(max_length=300, null=True, blank=True)
-    coordinateur = models.CharField(max_length=300, null=True, blank=True)
+    code_site = models.CharField(max_length=300, null=True, blank=True, db_index=True)
+    nom_site = models.CharField(max_length=300, db_index=True)
+    sous_mecanisme = models.BooleanField(default=True, db_index=True)
+    gestionnaire = models.CharField(max_length=300, null=True, blank=True, db_index=True)
+    coordinateur = models.CharField(max_length=300, null=True, blank=True, db_index=True)
 
     def __str__(self):
         return self.nom_site

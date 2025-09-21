@@ -9,6 +9,7 @@ class DashboardConfig(AppConfig):
     name = 'dashboard'
     
     def ready(self):
+        import dashboard.signals # noqa
         try:
             if any(cmd in sys.argv for cmd in ['runserver', 'gunicorn', 'uwsgi']) and not any(cmd in sys.argv for cmd in ['makemigrations', 'migrate', 'shell', 'check']):
                 from .services import sync_service

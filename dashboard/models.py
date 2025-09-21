@@ -7,15 +7,15 @@ class HistoriqueSynchro(models.Model):
         return str(self.dernier_synchro)
 
 class CoordonneesSite(models.Model):
-    site_name = models.CharField(max_length=255, unique=True)
-    type_site = models.CharField(max_length=50)
+    site_name = models.CharField(max_length=255, unique=True, db_index=True)
+    type_site = models.CharField(max_length=50, db_index=True)
     url_map = models.URLField(null=True, blank=True)
     
-    province = models.CharField(max_length=50, null=True, blank=True)
-    territoire = models.CharField(max_length=50, null=True, blank=True)
-    zone_sante = models.CharField(max_length=50, null=True, blank=True)
-    coordinateur_site = models.CharField(max_length=50, null=True, blank=True)
-    gestionnaire_site = models.CharField(max_length=50, null=True, blank=True)
+    province = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    territoire = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    zone_sante = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    coordinateur_site = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    gestionnaire_site = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     sous_mecanisme = models.BooleanField(default=False)
     
     nombre_menages = models.PositiveIntegerField(default=0)
@@ -32,9 +32,9 @@ class MouvementDeplace(models.Model):
     individus = models.PositiveIntegerField()
     personne_vivant_handicape = models.PositiveIntegerField(default=0)
     
-    typemouvement = models.CharField(max_length=50)
+    typemouvement = models.CharField(max_length=50, db_index=True)
     raison = models.CharField(max_length=255)
-    statutmouvement = models.CharField(max_length=50)
+    statutmouvement = models.CharField(max_length=50, db_index=True)
     
     individu_tranche_age_0_4_f = models.PositiveBigIntegerField(default=0)
     individu_tranche_age_5_11_f = models.PositiveBigIntegerField(default=0)
@@ -49,20 +49,20 @@ class MouvementDeplace(models.Model):
     individu_tranche_age_25_59_h = models.PositiveBigIntegerField(default=0)
     individu_tranche_age_60_h = models.PositiveBigIntegerField(default=0)
     
-    province = models.CharField(max_length=50, null=True, blank=True)
-    territoire = models.CharField(max_length=50, null=True, blank=True)
-    zone_sante = models.CharField(max_length=50, null=True, blank=True)
+    province = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    territoire = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    zone_sante = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     
-    site = models.CharField(max_length=50, null=True, blank=True)
-    type_site = models.CharField(max_length=50, null=True, blank=True)
-    coordinateur_site = models.CharField(max_length=50, null=True, blank=True)
-    gestionnaire_site = models.CharField(max_length=50, null=True, blank=True)
+    site = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    type_site = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    coordinateur_site = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    gestionnaire_site = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     sous_mecanisme = models.BooleanField(default=False)
     
-    organisation = models.CharField(max_length=50, null=True, blank=True)
-    activite = models.PositiveBigIntegerField(default=1)
-    enqueteur = models.CharField(max_length=50, null=True, blank=True)
-    date_enregistrement = models.DateField()
+    organisation = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    activite = models.PositiveBigIntegerField(default=1, db_index=True)
+    enqueteur = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    date_enregistrement = models.DateField(db_index=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

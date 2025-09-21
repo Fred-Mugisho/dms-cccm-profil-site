@@ -9,4 +9,5 @@ urlpatterns = [
     path('generate_users/', views.generate_users, name='generate_users'),
     path('mouvements_deplaces/', views.mouvements_deplaces_api, name='mouvements_deplaces_api'),
     path('import_data_site/', views.import_data_site, name='import_data_site'),
+    path('import_sites_from_file/', views.import_sites_from_file, name='import_sites_from_file'),
 ]

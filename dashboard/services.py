@@ -6,12 +6,16 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from requests.exceptions import ChunkedEncodingError
 from http.client import IncompleteRead
-
 from datetime import datetime, timedelta
-from .models import HistoriqueSynchro, CoordonneesSite, MouvementDeplace
+from django.db.models import Sum
 
+from .models import HistoriqueSynchro, CoordonneesSite, MouvementDeplace
 import logging
+
 logger = logging.getLogger(__name__)
+
+def normalize_str(s):
+    return s.strip().lower() if s else ""
 
 class DataSyncService:
     def __init__(self):
@@ -19,100 +23,58 @@ class DataSyncService:
         self.sync_interval = 30  # minutes
         self.running = False
         self.thread = None
-        self.session = self.get_session()
+        self.session = self._create_session()
 
-    def get_session(self):
+    def _create_session(self):
         session = requests.Session()
-        retry = Retry(
-            total=5,
-            backoff_factor=1,
-            status_forcelist=[502, 503, 504, 522],
-            raise_on_status=False
-        )
+        retry = Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504, 522], raise_on_status=False)
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
         return session
 
-    def clean_data_store(self):
-        try:
-            CoordonneesSite.objects.all().delete()
-            MouvementDeplace.objects.all().delete()
-            logger.info("Données nettoyées avec succès")
-        except Exception as e:
-            logger.error(f"Erreur lors du nettoyage des données: {e}")
-
-    def calculer_stats_site(self):
-        try:
-            for coordonnee in CoordonneesSite.objects.all():
-                mouvements = MouvementDeplace.objects.filter(site=coordonnee.site_name)
-                coordonnee.nombre_menages = sum(m.menage for m in mouvements)
-                coordonnee.nombre_individus = sum(m.individus for m in mouvements)
-                coordonnee.save()
-            logger.info("Statistiques des sites mises à jour")
-        except Exception as e:
-            logger.error(f"Erreur lors du calcul des statistiques: {e}")
-
     def should_sync(self):
-        try:
-            last_sync = HistoriqueSynchro.objects.last()
-            if not last_sync:
-                return True
-            return (datetime.now() - last_sync.dernier_synchro.replace(tzinfo=None)) > timedelta(minutes=self.sync_interval)
-        except Exception as e:
-            logger.error(f"Erreur lors de la vérification de synchro: {e}")
+        last_sync = HistoriqueSynchro.objects.last()
+        if not last_sync:
             return True
+        return (datetime.now() - last_sync.dernier_synchro.replace(tzinfo=None)) > timedelta(minutes=self.sync_interval)
 
-    def sync_movements_data(self, data_movements):
-        count = 0
+    def _parse_date(self, date_str):
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else datetime.now().date()
+        except ValueError:
+            return datetime.now().date()
+
+    def sync_movements_data_bulk(self, data_movements):
+        tranche_map = {
+            '0-4': ('individu_tranche_age_0_4_h', 'individu_tranche_age_0_4_f'),
+            '5-11': ('individu_tranche_age_5_11_h', 'individu_tranche_age_5_11_f'),
+            '12-17': ('individu_tranche_age_12_17_h', 'individu_tranche_age_12_17_f'),
+            '18-24': ('individu_tranche_age_18_24_h', 'individu_tranche_age_18_24_f'),
+            '25-59': ('individu_tranche_age_25_59_h', 'individu_tranche_age_25_59_f'),
+            '60+': ('individu_tranche_age_60_h', 'individu_tranche_age_60_f'),
+        }
+
+        mouvements_to_create = []
+
         for movement in data_movements:
             try:
                 activite = movement.get("activite", {})
-                if activite.get("statut", "") != "valide":
+                if activite.get("statut") != "valide":
                     continue
-                
-                individu_tranche_age_0_4_f = 0
-                individu_tranche_age_5_11_f = 0
-                individu_tranche_age_12_17_f = 0
-                individu_tranche_age_18_24_f = 0
-                individu_tranche_age_25_59_f = 0
-                individu_tranche_age_60_f = 0
-                individu_tranche_age_0_4_h = 0
-                individu_tranche_age_5_11_h = 0
-                individu_tranche_age_12_17_h = 0
-                individu_tranche_age_18_24_h = 0
-                individu_tranche_age_25_59_h = 0
-                individu_tranche_age_60_h = 0
+
+                tranche_counts = {field: 0 for fields in tranche_map.values() for field in fields}
+
                 for tranche in movement.get("individu_tranche_age", []):
                     sexe = tranche.get("sexe")
                     tranche_age = tranche.get("tranche_age")
                     individus = int(tranche.get("individus", 0))
-                    if sexe == 'femme':
-                        if tranche_age == '0-4':
-                            individu_tranche_age_0_4_f += individus
-                        elif tranche_age == '5-11':
-                            individu_tranche_age_5_11_f += individus
-                        elif tranche_age == '12-17':
-                            individu_tranche_age_12_17_f += individus
-                        elif tranche_age == '18-24':
-                            individu_tranche_age_18_24_f += individus
-                        elif tranche_age == '25-59':
-                            individu_tranche_age_25_59_f += individus
-                        elif tranche_age == '60+':
-                            individu_tranche_age_60_f += individus
-                    elif sexe == 'homme':
-                        if tranche_age == '0-4':
-                            individu_tranche_age_0_4_h += individus
-                        elif tranche_age == '5-11':
-                            individu_tranche_age_5_11_h += individus
-                        elif tranche_age == '12-17':
-                            individu_tranche_age_12_17_h += individus
-                        elif tranche_age == '18-24':
-                            individu_tranche_age_18_24_h += individus
-                        elif tranche_age == '25-59':
-                            individu_tranche_age_25_59_h += individus
-                        elif tranche_age == '60+':
-                            individu_tranche_age_60_h += individus
+                    if tranche_age in tranche_map:
+                        h_field, f_field = tranche_map[tranche_age]
+                        if sexe == "homme":
+                            tranche_counts[h_field] += individus
+                        elif sexe == "femme":
+                            tranche_counts[f_field] += individus
 
                 site = movement.get("site", {})
                 zs = movement.get("zone_sante", {})
@@ -120,93 +82,95 @@ class DataSyncService:
                 province = territoire.get("province", {}) if territoire else {}
                 org = movement.get("organisation", {})
                 enqueteur = movement.get("enqueteur", {})
-                
+
                 coordinateur = enqueteur.get("coordinateur", {})
                 gestionnaire = enqueteur.get("gestionnaire", {})
 
-                date_enr = movement.get("date_enregistrement")
-                try:
-                    date_enr = datetime.strptime(date_enr, "%Y-%m-%d").date() if date_enr else datetime.now().date()
-                except ValueError:
-                    date_enr = datetime.now().date()
-                    
+                date_enr = self._parse_date(movement.get("date_enregistrement"))
+
                 type_mouvement = movement.get("typemouvement", "")
                 if type_mouvement == 'donnee_brute':
                     type_mouvement = 'entree'
                 elif type_mouvement == 'depart':
                     type_mouvement = 'sortie'
 
-                MouvementDeplace.objects.create(
-                    provenance=movement.get("provenance", ""),
-                    menage=movement.get("menage", 0),
-                    individus=movement.get("individus", 0),
-                    personne_vivant_handicape=movement.get("personne_vivant_handicape", 0),
-                    typemouvement=type_mouvement,
-                    raison=movement.get("raison", ""),
-                    statutmouvement=activite.get("statut", ""),
-                    province=province.get("nom", ""),
-                    territoire=territoire.get("nom", ""),
-                    zone_sante=zs.get("nom", ""),
-                    site=site.get("nom", ""),
-                    type_site=site.get("type_site", ""),
-                    coordinateur_site=coordinateur.get("nom", ""),
-                    gestionnaire_site=gestionnaire.get("nom", ""),
-                    sous_mecanisme=bool(site.get("sous_meccanisme_cccm", 0)),
-                    organisation=org.get("nom", ""),
-                    activite=activite.get("id", 1),
-                    enqueteur=enqueteur.get("nom", ""),
-                    date_enregistrement=date_enr,
-                    individu_tranche_age_0_4_f=individu_tranche_age_0_4_f,
-                    individu_tranche_age_5_11_f=individu_tranche_age_5_11_f,
-                    individu_tranche_age_12_17_f=individu_tranche_age_12_17_f,
-                    individu_tranche_age_18_24_f=individu_tranche_age_18_24_f,
-                    individu_tranche_age_25_59_f=individu_tranche_age_25_59_f,
-                    individu_tranche_age_60_f=individu_tranche_age_60_f,
-                    individu_tranche_age_0_4_h=individu_tranche_age_0_4_h,
-                    individu_tranche_age_5_11_h=individu_tranche_age_5_11_h,
-                    individu_tranche_age_12_17_h=individu_tranche_age_12_17_h,
-                    individu_tranche_age_18_24_h=individu_tranche_age_18_24_h,
-                    individu_tranche_age_25_59_h=individu_tranche_age_25_59_h,
-                    individu_tranche_age_60_h=individu_tranche_age_60_h
+                mouvements_to_create.append(
+                    MouvementDeplace(
+                        provenance=movement.get("provenance", ""),
+                        menage=movement.get("menage", 0),
+                        individus=movement.get("individus", 0),
+                        personne_vivant_handicape=movement.get("personne_vivant_handicape", 0),
+                        typemouvement=type_mouvement,
+                        raison=movement.get("raison", ""),
+                        statutmouvement=activite.get("statut", ""),
+                        province=normalize_str(province.get("nom", "")),
+                        territoire=normalize_str(territoire.get("nom", "")),
+                        zone_sante=normalize_str(zs.get("nom", "")),
+                        site=normalize_str(site.get("nom", "")),
+                        type_site=site.get("type_site", ""),
+                        coordinateur_site=normalize_str(coordinateur.get("nom")),
+                        gestionnaire_site=normalize_str(gestionnaire.get("nom")),
+                        sous_mecanisme=bool(site.get("sous_meccanisme_cccm", 0)),
+                        organisation=normalize_str(org.get("nom", "")),
+                        activite=activite.get("id", 1),
+                        enqueteur=normalize_str(enqueteur.get("nom", "")),
+                        date_enregistrement=date_enr,
+                        **tranche_counts
+                    )
                 )
-                count += 1
             except Exception as e:
-                logger.error(f"Erreur création mouvement: {e}")
-        logger.info(f"{count} mouvements créés")
-        return count
+                logger.error(f"Erreur préparation mouvement: {e}")
 
-    def sync_sites_data(self, data_sites):
-        count = 0
+        MouvementDeplace.objects.bulk_create(mouvements_to_create, batch_size=500)
+        logger.info(f"{len(mouvements_to_create)} mouvements synchronisés en bulk")
+        return len(mouvements_to_create)
+
+    def sync_sites_data_bulk(self, data_sites):
+        sites_to_update = []
         for site in data_sites:
             try:
-                position_data = site.get("position", {})
-                zone_sante_data = site.get("zone_sante", {})
-                territoire_data = zone_sante_data.get("territoire", {})
-                province_data = territoire_data.get("province", {})
-                coordinateur_data = site.get("coordinateur", {})
-                gestionnaire_data = site.get("gestionnaire", {})
+                position = site.get("position", {})
+                zs = site.get("zone_sante", {})
+                territoire = zs.get("territoire", {}) if zs else {}
+                province = territoire.get("province", {}) if territoire else {}
+                coordinateur = site.get("coordinateur", {})
+                gestionnaire = site.get("gestionnaire", {})
                 sous_mecanisme = bool(site.get("sous_meccanisme_cccm", 0))
-                
-                CoordonneesSite.objects.update_or_create(
-                    site_name=site.get("nom", "").lower(),
+
+                obj, created = CoordonneesSite.objects.update_or_create(
+                    site_name=normalize_str(site.get("nom", "")),
                     defaults={
                         "type_site": site.get("type_site", ""),
                         "url_map": site.get("url_map", ""),
-                        "province": province_data.get("nom", "").lower() if province_data else "",
-                        "territoire": territoire_data.get("nom", "").lower() if territoire_data else "",
-                        "zone_sante": zone_sante_data.get("nom", "").lower() if zone_sante_data else "",
+                        "province": normalize_str(province.get("nom")),
+                        "territoire": normalize_str(territoire.get("nom")),
+                        "zone_sante": normalize_str(zs.get("nom")),
                         "sous_mecanisme": sous_mecanisme,
-                        "coordinateur_site": coordinateur_data.get("nom", "").lower() if coordinateur_data else "",
-                        "gestionnaire_site": gestionnaire_data.get("nom", "").lower() if gestionnaire_data else "",
-                        "latitude": float(position_data.get("latitude", 0)),
-                        "longitude": float(position_data.get("longitude", 0)),
+                        "coordinateur_site": normalize_str(coordinateur.get("nom")),
+                        "gestionnaire_site": normalize_str(gestionnaire.get("nom")),
+                        "latitude": float(position.get("latitude", 0)),
+                        "longitude": float(position.get("longitude", 0)),
                     }
                 )
-                count += 1
+                sites_to_update.append(obj)
             except Exception as e:
                 logger.error(f"Erreur création site: {e}")
-        logger.info(f"{count} sites créés")
-        return count
+
+        logger.info(f"{len(sites_to_update)} sites synchronisés")
+        return len(sites_to_update)
+
+    def calculer_stats_site_bulk(self):
+        updates = []
+        for coordonnee in CoordonneesSite.objects.all():
+            agg = MouvementDeplace.objects.filter(site=coordonnee.site_name).aggregate(
+                total_menages=Sum('menage'),
+                total_individus=Sum('individus')
+            )
+            coordonnee.nombre_menages = agg['total_menages'] or 0
+            coordonnee.nombre_individus = agg['total_individus'] or 0
+            updates.append(coordonnee)
+        CoordonneesSite.objects.bulk_update(updates, ['nombre_menages', 'nombre_individus'])
+        logger.info("Stats des sites mises à jour en bulk")
 
     def perform_sync(self):
         logger.info("Début de la synchronisation")
@@ -220,16 +184,15 @@ class DataSyncService:
 
             if resp_mvt.status_code == 200 and resp_sites.status_code == 200:
                 try:
-                    data_movements = json.loads(resp_mvt.content)
-                    data_sites = json.loads(resp_sites.content)
+                    data_movements = resp_mvt.json()
+                    data_sites = resp_sites.json()
                 except (ChunkedEncodingError, IncompleteRead, json.JSONDecodeError) as e:
                     logger.error(f"Erreur lecture JSON: {e}")
                     return False
 
-                self.clean_data_store()
-                self.sync_movements_data(data_movements)
-                self.sync_sites_data(data_sites)
-                self.calculer_stats_site()
+                self.sync_movements_data_bulk(data_movements)
+                self.sync_sites_data_bulk(data_sites)
+                self.calculer_stats_site_bulk()
                 HistoriqueSynchro.objects.create()
                 logger.info("Synchronisation terminée avec succès")
                 return True
@@ -247,16 +210,15 @@ class DataSyncService:
     def sync_loop(self):
         logger.info("Service de synchro en boucle lancé")
         while self.running:
+            start_time = time.time()
             try:
                 if self.should_sync():
                     logger.info("Synchro requise")
-                    if not self.perform_sync():
-                        time.sleep(30)
-                        continue
-                time.sleep(60 * self.sync_interval)
+                    self.perform_sync()
             except Exception as e:
                 logger.error(f"Erreur dans la boucle: {e}")
-                time.sleep(60)
+            elapsed = time.time() - start_time
+            time.sleep(max(0, 60*self.sync_interval - elapsed))
 
     def start(self):
         if not self.running:

@@ -171,23 +171,17 @@ class DataImportService:
     def save_site(self, payload: Dict[str, Any], site_data: SiteData) -> None:
         """Sauvegarde site"""
         try:
+            if site_data.nom_site == "":
+                return
+            
             site_instance, created = SiteDeplace.objects.update_or_create(
                 nom_site=site_data.nom_site.lower(),
                 defaults=payload,
             )
-            # if created:
-            #     if site_data.menages_initiaux > 0 or site_data.individus_initiaux > 0:
-            #         mvt = MouvementDeplace.objects.create(
-            #             site=site_instance,
-            #             type_mouvement="entree",
-            #             menages=abs(site_data.menages_initiaux),
-            #             individus=abs(site_data.individus_initiaux),
-            #             pvh=0,
-            #             date_mise_a_jour="2023-05-31",
-            #         )
-            #         mvt.save_democraphic_data()
-
-            # self.logger.info(f"Sauvegarde site: {site_data.nom_site}")
+            if created:
+                self.logger.info(f"Nouveau site: {site_data.nom_site}")
+            else:
+                self.logger.info(f"Mise à jour site: {site_data.nom_site}")
         except Exception as e:
             self.logger.error(f"Erreur sauvegarde {site_data.nom_site}: {e}")
 
@@ -262,8 +256,6 @@ class DataImportService:
                         if site_data:
                             payload = self.payload_create_site(site_data)
                             self.save_site(payload, site_data)
-                            # menages += site_data.menages_initiaux
-                            # individus += site_data.individus_initiaux
                     else:
                         if not self.validate_row_data(row):
                             continue
