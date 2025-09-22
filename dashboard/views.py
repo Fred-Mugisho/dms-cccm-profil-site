@@ -88,7 +88,7 @@ TYPES_SITES = [
     },
 ]
 
-CACHE_TIMEOUT = 60 * 10  # 10 minutes
+CACHE_TIMEOUT = 60 * 60 * 24  # 24 heures
 CACHE_KEY_COORDINATEURS_GESTIONNAIRES = "coordinateurs_gestionnaires"
 CACHE_KEY_DASHBOARD = "dashboard"
 
