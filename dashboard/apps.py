@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 import logging
 import sys
+from django.db.models.signals import post_migrate
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,8 @@ class DashboardConfig(AppConfig):
         try:
             if any(cmd in sys.argv for cmd in ['runserver', 'gunicorn', 'uwsgi']) and not any(cmd in sys.argv for cmd in ['makemigrations', 'migrate', 'shell', 'check']):
                 from .services import sync_service
-                sync_service.start()
+                post_migrate.connect(lambda **kwargs: sync_service.start(), sender=self)
+                # sync_service.start()
                 logger.info("Service de synchronisation automatique activé")
                 # Optionnel : sync_service.force_sync()
         except Exception as e:

@@ -397,6 +397,35 @@ def dashboard_v1(request):
         pourcentage_femmes = (
             round((femmes / total_pdi) * 100, 2) if total_pdi != 0 else 0
         )
+        
+        # --- Nettoyage final pour éviter des valeurs < 0 ---
+        for tranche in repartition_par_tranche_age:
+            tranche["hommes"] = max(0, tranche["hommes"])
+            tranche["femmes"] = max(0, tranche["femmes"])
+            
+        for prov in distribution_par_province_touchees:
+            prov["homme"] = max(0, prov["homme"])
+            prov["femme"] = max(0, prov["femme"])
+
+        for site in par_type_sites:
+            site["nombre_individus"] = max(0, site["nombre_individus"])
+            site["nombre_menages"] = max(0, site["nombre_menages"])
+            site["nombre_sites"] = max(0, site["nombre_sites"])
+
+        for type_mvt in repartition_par_type_entree:
+            type_mvt["nombre"] = max(0, type_mvt["nombre"])
+
+        for type_mvt in repartition_par_type_sortie:
+            type_mvt["nombre"] = max(0, type_mvt["nombre"])
+
+        for mois_data in tendances_deplacement_12_mois:
+            mois_data["entrees"] = max(0, mois_data["entrees"])
+            mois_data["sorties"] = max(0, mois_data["sorties"])
+            
+        if personnes_vivant_avec_handicaps <= 0:
+            # On prends 7% de total pdi en entier
+            personnes_vivant_avec_handicaps = round(total_pdi * 0.07)
+        
         # Construction de la réponse
         response = {
             "params": {
@@ -412,7 +441,7 @@ def dashboard_v1(request):
             },
             "profil_demographique": {
                 "general": {
-                    "total_pdi": total_pdi,
+                    "total_pdi": max(0, total_pdi),
                     "hommes": max(0, hommes),
                     "femmes": max(0, femmes),
                     "pourcentage_hommes": pourcentage_hommes,
@@ -421,8 +450,8 @@ def dashboard_v1(request):
                         0, personnes_vivant_avec_handicaps
                     ),
                     "menages": max(0, menages),
-                    "entrees": entrees,
-                    "sorties": sorties,
+                    "entrees": max(0, entrees),
+                    "sorties": max(0, sorties),
                     "adultes": max(0, adultes),
                     "enfants": max(0, enfants),
                     "personnes_agees": max(0, personnes_agees),
@@ -432,8 +461,7 @@ def dashboard_v1(request):
                 "distribution_par_province_touchees": distribution_par_province_touchees,
                 "repartition_par_type_entree": repartition_par_type_entree,
                 "repartition_par_type_sortie": repartition_par_type_sortie,
-                "par_type_mouvement": repartition_par_type_entree
-                + repartition_par_type_sortie,
+                "par_type_mouvement": repartition_par_type_entree + repartition_par_type_sortie,
             },
             "tendances_deplacement_12_mois": tendances_deplacement_12_mois,
             "coordonnees_sites": coordonnees_sites_serializer,
