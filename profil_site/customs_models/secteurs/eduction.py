@@ -13,7 +13,7 @@ class EducationProfilSite(BaseModel):
     nombre_enfants_en_age_scolaire_sont_scolarises = models.PositiveBigIntegerField(default=0)
     principales_obstacles_scolarisation = models.TextField(null=True, blank=True)
     activites_educatives_informelle_existantes = models.CharField(max_length=255, choices=OUI_NON_CHOICES)
-    nombre_enfants_en_age_scolaire_accedent_activites_educatives_informelles = models.PositiveBigIntegerField(default=0)
+    nb_enfants_age_scolaire_acces_educatives_informelles = models.PositiveBigIntegerField(default=0)
     
     def __str__(self):
         return self.site.nom_site
