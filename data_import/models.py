@@ -17,6 +17,7 @@ class SiteDeplace(models.Model):
     latitude = models.DecimalField(
         decimal_places=6, max_digits=9, null=True, blank=True
     )
+    type_propriete_fonciere = models.CharField(max_length=300, null=True, blank=True, db_index=True)
 
     code_site = models.CharField(max_length=300, null=True, blank=True, db_index=True)
     nom_site = models.CharField(max_length=300, db_index=True)

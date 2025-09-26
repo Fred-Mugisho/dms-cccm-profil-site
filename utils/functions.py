@@ -236,7 +236,7 @@ def convert_to_date(date_str):
     try:
         return datetime.strptime(date_str, "%Y-%m-%d").date()
     except ValueError:
-        return None
+        raise ValueError(f"Invalid date format: {date_str}")
 
 # Fonctions utilitaires optimisées
 def safe_int(val):

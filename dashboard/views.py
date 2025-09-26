@@ -130,6 +130,12 @@ def coordinateurs_gestionnaires(request):
             {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+def build_cache_key(prefix: str, params: dict) -> str:
+    # clé simple, stable et réversible pour chaque combinaison de filtres
+    parts = [prefix] + [
+        f"{k}={v}" for k, v in sorted(params.items()) if v is not None and v != ""
+    ]
+    return "|".join(parts)
 
 @api_view(["GET"])
 def dashboard_v1(request):
@@ -156,6 +162,23 @@ def dashboard_v1(request):
         # deadline = date.today()
         date_debut = None
         date_fin = date.today()
+        
+        cache_params = {
+            "province": province_param,
+            "territoire": territoire_param,
+            "zone_sante": zone_sante_param,
+            "site": site_param,
+            "coordinateur": coordinateur,
+            "gestionnaire": gestionnaire_param,
+            "sous_mecanisme": sous_mecanisme_param,
+            "date_debut": date_debut_param,
+            "date_fin": date_fin.strftime("%Y-%m-%d") if date_fin else None,
+        }
+        cache_key = build_cache_key("dashboard_cache", cache_params)
+        cached = cache.get(cache_key)
+        
+        if cached:
+            return Response(cached, status=status.HTTP_200_OK)
 
         # Application des filtres si présents
         if province_param:
@@ -415,20 +438,16 @@ def dashboard_v1(request):
             "tendances_deplacement_12_mois": tendances_deplacement_12_mois,
             "coordonnees_sites": coordonnees_sites_serializer,
         }
+        
+        # --- Mise en cache ---
+        cache.set(cache_key, response, CACHE_TIMEOUT)
+        
         return Response(response, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
             {"message": f"Erreur serveur: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
-
-def build_cache_key(prefix: str, params: dict) -> str:
-    # clé simple, stable et réversible pour chaque combinaison de filtres
-    parts = [prefix] + [
-        f"{k}={v}" for k, v in sorted(params.items()) if v is not None and v != ""
-    ]
-    return "|".join(parts)
 
 
 @api_view(["GET"])
