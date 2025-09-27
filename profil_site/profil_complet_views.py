@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 
 from utils.choices import *
 from utils.functions import convert_to_date
@@ -159,9 +160,14 @@ def handle_create(request, serializer_class, success_message):
             obj = serializer.save()
             response = api_response(True, success_message, serializer_class(obj).data)
             return Response(response, status=status.HTTP_201_CREATED)
-        response = api_response(False, "Un problème est survenu, veuillez réessayer plus tard", serializer.errors)
+        response = api_response(False, "Un erreur est survenu lors de la création", serializer.errors)
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+    except ValidationError as e:
+        # Ici on renvoie les erreurs de validation
+        response = api_response(False, "Un erreur est survenu lors de la création", e.detail)
         return Response(response, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print(f"Error --> {e}")
         response = api_response(False, "Un problème est survenu, veuillez réessayer plus tard")
         return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

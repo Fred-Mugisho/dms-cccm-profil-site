@@ -38,6 +38,42 @@ class ProfilSiteSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 class FormProfilSiteSerializer(serializers.ModelSerializer):
+    nouveau_site = SiteDeplaceSerializer(required=False)
     class Meta:
         model = ProfilSite
         fields = '__all__'
+        extra_kwargs = {
+            'site': {'read_only': True}
+        }
+        
+    def create(self, validated_data):
+        code_site = validated_data.pop('code_site', None)
+        concerne_nouveau_site = validated_data.get('concerne_nouveau_site', False)
+        print(validated_data.get('nouveau_site', None))
+        nouveau_site_data = validated_data.pop('nouveau_site', None)
+        
+        print(validated_data)
+        
+        if concerne_nouveau_site:
+            if not nouveau_site_data:
+                raise serializers.ValidationError({
+                    "nouveau_site": "Les informations du nouveau site sont obligatoires si 'concerne_nouveau_site' est vrai."
+                })
+                
+            # Création du nouveau site
+            site = SiteDeplace.objects.create(**nouveau_site_data)
+            return ProfilSite.objects.create(site=site, **validated_data)
+        
+        # Cas d’un site existant
+        if not code_site:
+            raise serializers.ValidationError({
+                "code_site": "Vous devez fournir un code_site si 'concerne_nouveau_site' est faux."
+            })
+            
+        site = SiteDeplace.objects.filter(code_site=code_site).first()
+        if not site:
+            raise serializers.ValidationError({
+                "code_site": f"Aucun site trouvé avec le code '{code_site}'."
+            })
+        
+        return ProfilSite.objects.create(site=site, **validated_data)

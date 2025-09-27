@@ -172,6 +172,7 @@ def export_data(request):
         for site in sites:
             number += 1
             site.generate_code_site(number)
+            site.save()
         mouvements = MouvementDeplace.objects.all().order_by('date_mise_a_jour')
         logging.info(f"Nombre de mouvements trouvés: {mouvements.count()}")
         if not mouvements.exists():

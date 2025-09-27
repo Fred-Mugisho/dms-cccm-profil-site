@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+import re
 
 
 # NOUVELLE REFLEXION
@@ -27,6 +28,37 @@ class SiteDeplace(models.Model):
 
     def __str__(self):
         return self.nom_site
+    
+    def save(self, *args, **kwargs):
+        if not self.code_site:
+            self.code_site = self.generate_code_new_site()
+        super(SiteDeplace, self).save(*args, **kwargs)
+        
+    @staticmethod
+    def extract_numero_site(code: str) -> int:
+        """
+        Extrait le numéro du site dans un code_site du type ...SNNN...[SP/CC/SS].
+        Exemple: CD6102ZS01S003SPHM -> 3
+                CD6102ZS01S1902SPHM -> 1902
+        """
+        match = re.search(r"S(\d+)(?=SP|CC|SS)", code)
+        return int(match.group(1)) if match else 0
+    
+    def generate_code_new_site(self) -> str:
+        """
+        Génère un nouveau code_site en prenant le plus grand numéro existant
+        et en incrémentant dessus.
+        """
+        codes_sites = SiteDeplace.objects.values_list("code_site", flat=True)
+
+        if not codes_sites:
+            numero = 1
+        else:
+            numeros = [self.extract_numero_site(code) for code in codes_sites if code]
+            numero = (max(numeros) if numeros else 0) + 1
+
+        return self.generate_code_site(order=numero)
+        
     
     def generate_code_site(self, order: int, use_administratif: bool = False):
         """
@@ -66,7 +98,7 @@ class SiteDeplace(models.Model):
         ts = self.type_site.lower()
         self.code_site = code_site
         self.type_site = ts.title()
-        self.save(update_fields=["code_site", "type_site"])
+        # self.save(update_fields=["code_site", "type_site"])
 
 
     def deltas_menages_individus_type_mouvement(self, menages: int, individus: int):

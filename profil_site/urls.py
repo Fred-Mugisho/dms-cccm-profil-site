@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from . import profil_complet_views as prof_views
- 
+
 urlpatterns = [
     path('options_profil_site/', views.choices_profil_site, name='choices_profil_site'),
     path('', views.profils_sites, name='profils_sites'),
