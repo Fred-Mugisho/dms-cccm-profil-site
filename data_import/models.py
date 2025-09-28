@@ -56,7 +56,7 @@ class SiteDeplace(models.Model):
         else:
             numeros = [self.extract_numero_site(code) for code in codes_sites if code]
             numero = (max(numeros) if numeros else 0) + 1
-
+            
         return self.generate_code_site(order=numero)
         
     
@@ -95,10 +95,11 @@ class SiteDeplace(models.Model):
             # Format sanitaire/humanitaire : CDXXTYYZSQQSNNN[SP/CC/SS][SM/HM]
             code_site = f"{self.code_zone_sante}{s_number}{site_type}{gestion_type}"
 
-        ts = self.type_site.lower()
-        self.code_site = code_site
-        self.type_site = ts.title()
+        # ts = self.type_site.lower()
+        # self.code_site = code_site
+        # self.type_site = ts.title()
         # self.save(update_fields=["code_site", "type_site"])
+        return code_site
 
 
     def deltas_menages_individus_type_mouvement(self, menages: int, individus: int):

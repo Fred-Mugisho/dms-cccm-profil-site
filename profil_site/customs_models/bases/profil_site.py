@@ -39,6 +39,7 @@ class ProfilSiteSerializer(serializers.ModelSerializer):
         
 class FormProfilSiteSerializer(serializers.ModelSerializer):
     nouveau_site = SiteDeplaceSerializer(required=False)
+    code_site = serializers.CharField(required=False)
     class Meta:
         model = ProfilSite
         fields = '__all__'
@@ -49,10 +50,30 @@ class FormProfilSiteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         code_site = validated_data.pop('code_site', None)
         concerne_nouveau_site = validated_data.get('concerne_nouveau_site', False)
-        print(validated_data.get('nouveau_site', None))
         nouveau_site_data = validated_data.pop('nouveau_site', None)
         
-        print(validated_data)
+        # Se rassure que nombre_individus == au somme de tous les groupes d'age et sexe
+        nombre_individus = validated_data.get("nombre_individus", 0)
+        nombre_individus_groupes = (
+            validated_data.get('individus_0_4_f', 0) +
+            validated_data.get('individus_5_11_f', 0) +
+            validated_data.get('individus_12_17_f', 0) +
+            validated_data.get('individus_18_24_f', 0) +
+            validated_data.get('individus_25_59_f', 0) +
+            validated_data.get('individus_60_f', 0) +
+            validated_data.get('individus_0_4_h', 0) +
+            validated_data.get('individus_5_11_h', 0) +
+            validated_data.get('individus_12_17_h', 0) +
+            validated_data.get('individus_18_24_h', 0) +
+            validated_data.get('individus_25_59_h', 0) +
+            validated_data.get('individus_60_h', 0)
+        )
+        if nombre_individus != nombre_individus_groupes:
+            raise serializers.ValidationError({
+                "nombre_individus": "Le nombre d'individus doit correspondre au somme de tous les groupes d'age et sexe."
+            })
+        
+        # Cas d’un nouveau site
         
         if concerne_nouveau_site:
             if not nouveau_site_data:

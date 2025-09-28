@@ -3,6 +3,7 @@ from django.db import models
 from data_import.models import SiteDeplace
 from utils.choices import *
 from rest_framework import serializers
+from django.db import transaction
 
 class DetailsTypeAbrisProfilSite(BaseModel):
     type_abris = models.CharField(max_length=255)
@@ -53,15 +54,44 @@ class AbrisAmesProfilSiteSerializer(serializers.ModelSerializer):
         model = AbrisAmesProfilSite
         fields = '__all__'
         
-class CreateAbrisAmesProfilSiteSerializer(serializers.ModelSerializer):
+class FormAbrisAmesProfilSiteSerializer(serializers.ModelSerializer):
+    code_site = serializers.CharField(required=False)
+    details_types_abris = DetailsTypeAbrisProfilSiteSerializer(many=True)
+
     class Meta:
         model = AbrisAmesProfilSite
         fields = '__all__'
-        
+        extra_kwargs = {
+            'site': {'read_only': True},
+        }
+
     def create(self, validated_data):
-        details_types_abris = validated_data.pop('details_types_abris')
-        abris_ames = AbrisAmesProfilSite.objects.create(**validated_data)
-        for detail_type_abris in details_types_abris:
-            detail = DetailsTypeAbrisProfilSite.objects.create(**detail_type_abris)
-            abris_ames.details_types_abris.add(detail)
-        return abris_ames
+        with transaction.atomic():
+            code_site = validated_data.pop('code_site', None)
+            if not code_site:
+                raise serializers.ValidationError({
+                    "code_site": "Le code du site est obligatoire."
+                })
+
+            site = SiteDeplace.objects.filter(code_site=code_site).first()
+            if not site:
+                raise serializers.ValidationError({
+                    "code_site": f"Aucun site trouvé avec le code '{code_site}'."
+                })
+
+            # On récupère les détails imbriqués
+            details_types_abris_data = validated_data.pop('details_types_abris', [])
+
+            # Création de AbrisAmes
+            abris_ames = AbrisAmesProfilSite.objects.create(site=site, **validated_data)
+
+            # Création des détails
+            details_instances = []
+            for detail_data in details_types_abris_data:
+                detail = DetailsTypeAbrisProfilSite.objects.create(**detail_data)
+                details_instances.append(detail)
+
+            # Liaison ManyToMany
+            abris_ames.details_types_abris.set(details_instances)
+
+            return abris_ames

@@ -279,8 +279,7 @@ TYPE_ABRIS_OPTIONS = [
     "Tente en bache",
     "Tente en materiaux",
     "Tente en planche",
-    "tente en feuille",
-    "Tente en materiaux",
+    "Tente en feuille",
     "Tente en tissus",
     "Autre",
 ]
@@ -316,14 +315,14 @@ AME_SAISON_SECHE_CHOICES = [
 ]
 
 STATEGIES_COURANTES_MANQUE_AME_OPTIONS = [
-    "Pas besoin d'utiliser une stratégie d'adaptation car il n'y a pas de problème d'abri ou de AME ;",
-    "Vente d'actifs/de biens du ménage (bijoux, téléphone, etc.) ;",
-    "Vente/location d'une parcelle d'abri ;",
-    "Vente de certains articles d'assistance reçus ;",
-    "Réduction de la consommation alimentaire ;",
-    "Dépenser ses économies ;",
-    "Emprunter de l'argent / acheter à crédit ;",
-    "Travail à haut risque / illégal ;",
+    "Pas besoin d'utiliser une stratégie d'adaptation car il n'y a pas de problème d'abri ou de AME",
+    "Vente d'actifs/de biens du ménage (bijoux, téléphone, etc.)",
+    "Vente/location d'une parcelle d'abri",
+    "Vente de certains articles d'assistance reçus",
+    "Réduction de la consommation alimentaire",
+    "Dépenser ses économies",
+    "Emprunter de l'argent / acheter à crédit",
+    "Travail à haut risque / illégal",
     "Envoyer les enfants au travail",
     "Créer de petits magasins/entreprises dans le SITE",
     "Autre",
@@ -371,13 +370,14 @@ TYPES_LATRINES_DOUCHES_OPTIONS = [
     "Latrines publiques semi-durables",
     "Latrines publiques d'urgence",
     "Latrines privées",
-    "Latrines de fortune (ménages)",
+    "Latrines de fortune ménages",
     "Pas de latrines",
-    "Douches publiques (semi-durable)",
-    "Douches publiques (urgence)",
+    
+    "Douches publiques semi-durable",
+    "Douches publiques urgence",
     "Douches familiales",
     "Douches privées",
-    "Douches de fortune (ménages)",
+    "Douches de fortune ménages",
     "Pas de douches",
 ]
 
