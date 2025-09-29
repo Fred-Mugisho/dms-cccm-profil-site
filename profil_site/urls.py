@@ -21,9 +21,9 @@ urlpatterns = [
     path('create_abris_ame/', prof_views.create_abris_ame_profil_site, name='create_abris_ame_profil_site'), # OK
     path('create_wash/', prof_views.create_wash_profil_site, name='create_wash_profil_site'), # OK
     path('create_sante/', prof_views.create_sante_profil_site, name='create_sante_profil_site'), # OK
-    path('create_securite_alimentaire/', prof_views.create_securite_alimentaire_profil_site, name='create_securite_alimentaire_profil_site'),
-    path('create_protection/', prof_views.create_protection_profil_site, name='create_protection_profil_site'),
-    path('create_education/', prof_views.create_education_profil_site, name='create_education_profil_site'),
-    path('create_moyens_subsistance/', prof_views.create_moyens_subsistance_profil_site, name='create_moyens_subsistance_profil_site'),
+    path('create_securite_alimentaire/', prof_views.create_securite_alimentaire_profil_site, name='create_securite_alimentaire_profil_site'), # OK
+    path('create_protection/', prof_views.create_protection_profil_site, name='create_protection_profil_site'), # OK
+    path('create_education/', prof_views.create_education_profil_site, name='create_education_profil_site'), # OK
+    path('create_moyens_subsistance/', prof_views.create_moyens_subsistance_profil_site, name='create_moyens_subsistance_profil_site'), # OK
     path('create_cartographie_acteurs_services/', prof_views.create_cartographie_acteurs_services_profil_site, name='create_cartographie_acteurs_services_profil_site'),
 ]

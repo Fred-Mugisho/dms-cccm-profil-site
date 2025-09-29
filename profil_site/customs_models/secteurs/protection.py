@@ -9,7 +9,7 @@ class ProtectionProfilSite(BaseModel):
     site = models.ForeignKey(SiteDeplace, on_delete=models.CASCADE, db_index=True)
     existance_restrictions_mouvement_interieur_exterieur = models.CharField(max_length=255, choices=OUI_NON_CHOICES)
     restrictions_mouvement_rencontrees = models.TextField(null=True, blank=True)
-    tensions_entre_familles = models.CharField(max_length=255)
+    tensions_entre_familles = models.CharField(max_length=255) # OUI_NON_JE_PREFERE_NON_REPONDRE
     incidents_securite_produits = models.CharField(max_length=255)
     acteurs_impliques_incidents_securite = models.TextField(null=True, blank=True)
     nature_incidents_securite = models.TextField(null=True, blank=True)

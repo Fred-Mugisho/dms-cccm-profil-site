@@ -27,6 +27,7 @@ from .customs_models.autres.gouvernance_participation_site import (
 from .customs_models.autres.moyens_subsistance_besoins_prioritaires import (
     MoyenSubsistanceBesoinPrioritaireProfilSite,
     MoyenSubsistanceBesoinPrioritaireProfilSiteSerializer,
+    FormMoyenSubsistanceBesoinPrioritaireProfilSiteSerializer,
 )
 from .customs_models.autres.vulnerabilite_site import (
     VulnerabilitePopulationProfilSite,
@@ -135,10 +136,11 @@ def options_choices(request):
             "TYPES_LATRINES_DOUCHES_OPTIONS": TYPES_LATRINES_DOUCHES_OPTIONS,
             "PROBLEMES_SANTE_RESIDENTS_OPTIONS": PROBLEMES_SANTE_RESIDENTS_OPTIONS,
             "PROBLEMES_FAMILLES_ACCES_SOINS_OPTIONS": PROBLEMES_FAMILLES_ACCES_SOINS_OPTIONS,
-            "NOMBRE_REPAS_PAR_JOUR_OPTIONS": NOMBRE_REPAS_PAR_JOUR_OPTIONS,
+            # "NOMBRE_REPAS_PAR_JOUR_OPTIONS": NOMBRE_REPAS_PAR_JOUR_OPTIONS,
             "DIFFICULTES_ACCES_NOURRITURE": DIFFICULTES_ACCES_NOURRITURE,
             "FREQUENCE_AIDES_ALIMENTAIRE_OPTIONS": FREQUENCE_AIDES_ALIMENTAIRE_OPTIONS,
             "RESTRICTIONS_MOUVEMENT_OPTIONS": RESTRICTIONS_MOUVEMENT_OPTIONS,
+            "OUI_NON_JE_PREFERE_NON_REPONDRE": OUI_NON_JE_PREFERE_NON_REPONDRE,
             "ACTEURS_INCIDENTS_IMPLIQUES_OPTIONS": ACTEURS_INCIDENTS_IMPLIQUES_OPTIONS,
             "MENANCES_COURANTES_OPTIONS": MENANCES_COURANTES_OPTIONS,
             "ZONES_INSECURES_OPTIONS": ZONES_INSECURES_OPTIONS,
@@ -200,8 +202,6 @@ def profils_sites_complet(request, id=None):
 
             for key, (model, serializer_class) in sections.items():
                 obj = model.objects.filter(site=site).order_by("-created_at").first()
-                print(f"Model: {model}")
-                print(f"Obj: {obj}")
                 serializer[key] = serializer_class(obj).data if obj else None
 
             response = api_response(
@@ -258,9 +258,9 @@ def profils_sites_complet(request, id=None):
 
 
 # Fonction utilitaire générique
-def handle_create(request, serializer_class, success_message, response_serializer=None):
+def handle_create(request, form_serializer_class, success_message, response_serializer=None):
     try:
-        serializer = serializer_class(data=request.data)
+        serializer = form_serializer_class(data=request.data)
         if serializer.is_valid():
             obj = serializer.save()
             response = api_response(
@@ -269,7 +269,7 @@ def handle_create(request, serializer_class, success_message, response_serialize
                 (
                     response_serializer(obj).data
                     if response_serializer
-                    else serializer_class(obj).data
+                    else form_serializer_class(obj).data
                 ),
             )
             return Response(response, status=status.HTTP_201_CREATED)
@@ -368,22 +368,29 @@ def create_sante_profil_site(request):
 def create_securite_alimentaire_profil_site(request):
     return handle_create(
         request,
-        SecuriteAlimentaireProfilSiteSerializer,
+        FormSecuriteAlimentaireProfilSiteSerializer,
         "Sécurité alimentaire créée avec succès",
+        SecuriteAlimentaireProfilSiteSerializer,
     )
 
 
 @api_view(["POST", "PUT"])
 def create_protection_profil_site(request):
     return handle_create(
-        request, ProtectionProfilSiteSerializer, "Protection créée avec succès"
+        request, 
+        FormProtectionProfilSiteSerializer,
+        "Protection créée avec succès",
+        ProtectionProfilSiteSerializer, 
     )
 
 
 @api_view(["POST", "PUT"])
 def create_education_profil_site(request):
     return handle_create(
-        request, EducationProfilSiteSerializer, "Éducation créée avec succès"
+        request, 
+        FormEducationProfilSiteSerializer,
+        "Éducation créée avec succès",
+        EducationProfilSiteSerializer, 
     )
 
 
@@ -391,8 +398,9 @@ def create_education_profil_site(request):
 def create_moyens_subsistance_profil_site(request):
     return handle_create(
         request,
-        MoyenSubsistanceBesoinPrioritaireProfilSiteSerializer,
+        FormMoyenSubsistanceBesoinPrioritaireProfilSiteSerializer,
         "Moyens de subsistance créés avec succès",
+        MoyenSubsistanceBesoinPrioritaireProfilSiteSerializer,
     )
 
 
@@ -400,6 +408,7 @@ def create_moyens_subsistance_profil_site(request):
 def create_cartographie_acteurs_services_profil_site(request):
     return handle_create(
         request,
-        CartographieServiceActeurProfilSiteSerializer,
+        FormCartographieServiceActeurProfilSiteSerializer,
         "Cartographie des acteurs et services créée avec succès",
+        CartographieServiceActeurProfilSiteSerializer,
     )

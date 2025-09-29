@@ -418,12 +418,12 @@ PROBLEMES_FAMILLES_ACCES_SOINS_OPTIONS = [
     "Aucun",
 ]
 
-NOMBRE_REPAS_PAR_JOUR_OPTIONS = [
-    "Un repas",
-    "Trois repas",
-    "Deux repas",
-    "Pas de repas",
-]
+# NOMBRE_REPAS_PAR_JOUR_OPTIONS = [
+#     "Un repas",
+#     "Trois repas",
+#     "Deux repas",
+#     "Pas de repas",
+# ]
 
 DIFFICULTES_ACCES_NOURRITURE = [
     "Pas d'installations de cuisson",
@@ -451,6 +451,13 @@ RESTRICTIONS_MOUVEMENT_OPTIONS = [
     "Nécessité de fournir une raison spécifique pour le mouvement (emploi, médical, scolaire)",
     "Barrages routiers physiques",
     "Autres",
+]
+
+OUI_NON_JE_PREFERE_NON_REPONDRE = [
+    "Oui",
+    "Non",
+    "Je ne sais pas",
+    "Je préfère ne pas répondre",
 ]
 
 ACTEURS_INCIDENTS_IMPLIQUES_OPTIONS = [

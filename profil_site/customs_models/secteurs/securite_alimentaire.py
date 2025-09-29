@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 class SecuriteAlimentaireProfilSite(BaseModel):
     site = models.ForeignKey(SiteDeplace, on_delete=models.CASCADE, db_index=True)
-    repas_par_jour_familles = models.PositiveBigIntegerField(default=0)
+    nombre_repas_par_jour_familles = models.PositiveBigIntegerField(default=0)
     difficultes_rencontrees_acces_nourriture = models.TextField(null=True, blank=True)
     existance_magasins_stockages_vivres = models.CharField(max_length=255, choices=OUI_NON_CHOICES)
     regularite_aide_alimentaire_derniers_mois = models.CharField(max_length=255)
