@@ -10,10 +10,11 @@ urlpatterns = [
     
     # PROFIL DE SITE COMPLET
     path('options_choices/', prof_views.options_choices, name='options_choices'), # OK
-    path('complet/', prof_views.profils_sites_complet, name='profils_sites_complet'), # OK
-    path('complet/<uuid:id>/', prof_views.profils_sites_complet, name='profil_site_detail_complet'), # OK
     path('sites_deplaces/', prof_views.sites_deplaces, name='sites_deplaces'), # OK
     path('sites_deplaces/<int:id>/', prof_views.sites_deplaces, name='sites_deplaces_detail'), # OK
+    path('complet/', prof_views.profils_sites_complet, name='profils_sites_complet'), # OK
+    path('<str:code_site>/', prof_views.get_profil_site_by_code, name='get_profil_site_by_code'), # OK
+    path('complet/<uuid:id>/', prof_views.profils_sites_complet, name='profil_site_detail_complet'), # OK
     path('create_profil_site/', prof_views.create_profil_site, name='create_profil_site'), # OK
     path('create_gestion_administration/', prof_views.create_gestion_administration_profil_site, name='create_gestion_administration_profil_site'), # OK
     path('create_organisation_fonctionnement/', prof_views.create_organisation_fonctionnement_profil_site, name='create_organisation_fonctionnement_profil_site'), # OK

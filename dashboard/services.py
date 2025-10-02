@@ -19,7 +19,7 @@ def normalize_str(s):
 
 class DataSyncService:
     def __init__(self):
-        self.BASE_URL = "http://cccm.expertiserdc.com/api"
+        self.BASE_URL = "http://d.wnhelp.org/api"
         self.sync_interval = 30  # minutes
         self.running = False
         self.thread = None

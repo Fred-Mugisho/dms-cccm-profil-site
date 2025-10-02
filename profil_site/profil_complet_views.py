@@ -158,6 +158,68 @@ def options_choices(request):
             False, "Un probleme est survenu, veuillez reessayer plus tard"
         )
         return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(["GET"])
+def get_profil_site_by_code(request, code_site: str):
+    try:
+        profil = ProfilSite.objects.filter(site__code_site=code_site).order_by("-created_at").first()
+        if not profil:
+            response = api_response(
+                False,
+                f"Aucun profil trouvé pour le site avec le code '{code_site}'.",
+            )
+            return Response(response, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = ProfilSiteSerializer(profil).data
+
+        site = profil.site
+        sections = {
+            "gestion_administration": (
+                GestionAdminProfilSite,
+                GestionAdminProfilSiteSerializer,
+            ),
+            "organisation_fonctionnement": (
+                OrganisationInterneFonctionnementProfilSite,
+                OrganisationInterneFonctionnementProfilSiteSerializer,
+            ),
+            "vulnerabilites": (
+                VulnerabilitePopulationProfilSite,
+                VulnerabilitePopulationProfilSiteSerializer,
+            ),
+            "abris_ame": (AbrisAmesProfilSite, AbrisAmesProfilSiteSerializer),
+            "wash": (WashProfilSite, WashProfilSiteSerializer),
+            "sante": (SanteProfilSite, SanteProfilSiteSerializer),
+            "securite_alimentaire": (
+                SecuriteAlimentaireProfilSite,
+                SecuriteAlimentaireProfilSiteSerializer,
+            ),
+            "protection": (ProtectionProfilSite, ProtectionProfilSiteSerializer),
+            "education": (EducationProfilSite, EducationProfilSiteSerializer),
+            "moyens_subsistance": (
+                MoyenSubsistanceBesoinPrioritaireProfilSite,
+                MoyenSubsistanceBesoinPrioritaireProfilSiteSerializer,
+            ),
+            "cartographie_acteurs_services": (
+                CartographieServiceActeurProfilSite,
+                CartographieServiceActeurProfilSiteSerializer,
+            ),
+        }
+
+        for key, (model, serializer_class) in sections.items():
+            obj = model.objects.filter(site=site).order_by("-created_at").first()
+            serializer[key] = serializer_class(obj).data if obj else None
+
+        response = api_response(
+            True,
+            f"Profil du site {profil.site.nom_site} chargé avec succès",
+            serializer,
+        )
+        return Response(response, status=status.HTTP_200_OK)
+    except Exception as e:
+        response = api_response(
+            False, "Un probleme est survenu, veuillez reessayer plus tard"
+        )
+        return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["GET"])
