@@ -207,9 +207,13 @@ def charger_data_profil_site(request):
             moyens_subsistance_data = item.get("moyens_subsistance", {})
             cartographie_acteurs_services_data = item.get("cartographie_acteurs_services", {})
             
+            logger.info(f"Creating profil for site: {code_site}")
+            
             profil_serializer = FormProfilSiteSerializer(data=profil_data)
             if profil_serializer.is_valid():
                 profil_serializer.save()
+                
+                logger.info(f"Saved profil for site: {code_site}")
                 
                 if gestion_administration_data:
                     gestion_administration_data["code_site"] = code_site
