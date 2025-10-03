@@ -163,16 +163,16 @@ def options_choices(request):
 def get_profil_site_by_code(request, code_site: str):
     try:
         profil = ProfilSite.objects.filter(site__code_site=code_site).order_by("-created_at").first()
-        if not profil:
-            response = api_response(
-                False,
-                f"Aucun profil trouvé pour le site avec le code '{code_site}'.",
-            )
-            return Response(response, status=status.HTTP_404_NOT_FOUND)
+        # if not profil:
+        #     response = api_response(
+        #         False,
+        #         f"Aucun profil trouvé pour le site avec le code '{code_site}'.",
+        #     )
+        #     return Response(response, status=status.HTTP_404_NOT_FOUND)
         
         serializer = ProfilSiteSerializer(profil).data
 
-        site = profil.site
+        site = profil.site if profil else None
         sections = {
             "gestion_administration": (
                 GestionAdminProfilSite,
@@ -206,16 +206,18 @@ def get_profil_site_by_code(request, code_site: str):
         }
 
         for key, (model, serializer_class) in sections.items():
-            obj = model.objects.filter(site=site).order_by("-created_at").first()
+            obj = model.objects.filter(site=site).order_by("-created_at").first() if site else None
             serializer[key] = serializer_class(obj).data if obj else None
-
+        
+        message = f"Profil du site {profil.site.nom_site}" if profil else f"Aucun profil trouvé pour le site avec le code '{code_site}'."
         response = api_response(
             True,
-            f"Profil du site {profil.site.nom_site} chargé avec succès",
+            message,
             serializer,
         )
         return Response(response, status=status.HTTP_200_OK)
     except Exception as e:
+        print(f"Error --> {e}")
         response = api_response(
             False, "Un probleme est survenu, veuillez reessayer plus tard"
         )
