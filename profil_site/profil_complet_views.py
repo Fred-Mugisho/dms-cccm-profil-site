@@ -159,7 +159,7 @@ def options_choices(request):
         )
         return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-@api_view(["POST", "PUT"])
+@api_view(["POST"])
 def charger_data_profil_site(request):
     try:
         data = request.data
