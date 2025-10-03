@@ -167,6 +167,7 @@ def charger_data_profil_site(request):
         from .data import DATA
         # data = request.data
         logger.info(f"Loading data...")
+        response_data = []
         for item in DATA:
             code_site = item.get("code_site")
             logger.info(f"Processing item: {code_site}")
@@ -324,12 +325,15 @@ def charger_data_profil_site(request):
                     else:
                         logger.error(f"Erreur de validation pour cartographie_acteurs_services du site '{code_site}': {cartographie_serializer.errors}")
                         return Response(cartographie_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    
+                response_data.append(profil_serializer.data)
             else:
                 logger.error(f"Erreur de validation pour le profil du site '{code_site}': {profil_serializer.errors}")
                 return Response(profil_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         response = api_response(
             True,
             "Les données ont été chargées avec succès",
+            response_data,
         )
         return Response(response, status=status.HTTP_201_CREATED)
     except Exception as e:
