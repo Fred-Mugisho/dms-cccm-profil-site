@@ -71,6 +71,8 @@ from .customs_models.secteurs.wash_site import (
     FormWashProfilSiteSerializer,
 )
 import logging
+from django.db import transaction
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -161,10 +163,81 @@ def options_choices(request):
         )
         return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+@api_view(["POST", "PUT"])
+def update_code_site(request):
+    data = request.data
+    if not isinstance(data, list):
+        return Response(
+            {"error": "Les données doivent être une liste"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    response_data, errors_data = [], []
+
+    try:
+        with transaction.atomic():
+            for item in data:
+                nom_site = item.get("nom_site")
+                code_site = item.get("code_site")
+
+                if not nom_site or not code_site:
+                    errors_data.append(f"Données manquantes pour {item}")
+                    continue
+
+                updated = SiteDeplace.objects.filter(nom_site=nom_site).update(
+                    code_site=code_site
+                )
+                if updated:
+                    response_data.append(f"Le site {nom_site} a bien été mis à jour")
+                else:
+                    errors_data.append(f"Site introuvable: {nom_site}")
+
+        return Response(
+            {"success": response_data, "errors": errors_data},
+            status=status.HTTP_200_OK,
+        )
+
+    except Exception as e:
+        logger.error(f"Erreur update_code_site: {e}", exc_info=True)
+        return Response(
+            {"error": "Un problème est survenu, veuillez réessayer plus tard"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+
+def updates_code_site_remote_with_local():
+    try:
+        sites = SiteDeplace.objects.values("nom_site", "code_site")
+        data_json = list(sites)
+
+        if not data_json:
+            logger.info("Aucun site à synchroniser")
+            return
+
+        endpoint = "http://dmscccm.wnhelp.org/api/profil-site/data/update-code-site/"
+        response = requests.post(endpoint, json=data_json, timeout=30)
+
+        if response.ok:
+            logger.info(f"{len(data_json)} sites synchronisés avec succès")
+        else:
+            logger.error(
+                f"Échec de la synchronisation, statut={response.status_code}, body={response.text}"
+            )
+
+    except requests.RequestException as e:
+        logger.error(f"Erreur réseau lors de la sync: {e}")
+    except Exception as e:
+        logger.error(f"Erreur inattendue lors de la sync: {e}", exc_info=True)
+
+    
 @api_view(["POST", "PUT", "GET", "DELETE"])
 def charger_data_profil_site(request):
     try:
         from .data import DATA
+        
+        # Update local codes from remote
+        updates_code_site_remote_with_local()
+        
         # data = request.data
         logger.info(f"Loading data...")
         response_data = []
