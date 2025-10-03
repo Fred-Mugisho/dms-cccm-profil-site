@@ -176,8 +176,10 @@ def charger_data_profil_site(request):
                 logger.error(f"Aucun site trouvé avec le code '{code_site}'.")
                 continue
             
+            logger.info(f"Processing site: {site_with_code}")
+            
             profil_data = {
-                "code_site": site_with_code.code_site,
+                "code_site": code_site,
                 "enqueteur": item.get("enqueteur", None),
                 "organisation": item.get("organisation", None),
                 "nombre_menages": item.get("nombre_menages", None),
