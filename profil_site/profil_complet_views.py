@@ -159,11 +159,12 @@ def options_choices(request):
         )
         return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-@api_view(["POST"])
+@api_view(["POST", "PUT", "GET", "DELETE"])
 def charger_data_profil_site(request):
     try:
-        data = request.data
-        for item in data:
+        from .data import DATA
+        # data = request.data
+        for item in DATA:
             code_site = item.get("code_site")
             site_with_code = SiteDeplace.objects.filter(code_site=code_site).first()
             if not site_with_code:
