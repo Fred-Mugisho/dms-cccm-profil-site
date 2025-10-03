@@ -27,4 +27,5 @@ urlpatterns = [
     path('create_education/', prof_views.create_education_profil_site, name='create_education_profil_site'), # OK
     path('create_moyens_subsistance/', prof_views.create_moyens_subsistance_profil_site, name='create_moyens_subsistance_profil_site'), # OK
     path('create_cartographie_acteurs_services/', prof_views.create_cartographie_acteurs_services_profil_site, name='create_cartographie_acteurs_services_profil_site'),
+    path('charger/data/', prof_views.charger_data_profil_site, name='charger_data_profil_site'),
 ]

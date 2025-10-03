@@ -47,6 +47,65 @@ class FormProfilSiteSerializer(serializers.ModelSerializer):
             'site': {'read_only': True}
         }
         
+    def extract_demographic_data(self, individus: int):
+        pourc_hommes = {
+            "0_4": 19.8,
+            "5_11": 15.9,
+            "12_17": 19.34,
+            "18_24": 12.35,
+            "25_59": 28.81,
+            "60": 3.80,
+        }
+
+        pourc_femmes = {
+            "0_4": 19.3,
+            "5_11": 15.5,
+            "12_17": 18.1,
+            "18_24": 12.57,
+            "25_59": 29.33,
+            "60": 4.2,
+        }
+
+        if individus == 0:
+            return {
+                f"individus_{tranche}_{sexe}": 0
+                for tranche in pourc_hommes
+                for sexe in ("f", "h")
+            }
+
+        resultats_temp = []
+
+        for tranche in pourc_hommes:
+            pct_h = pourc_hommes[tranche]
+            pct_f = pourc_femmes[tranche]
+            total_pct = pct_h + pct_f
+
+            total_tranche = individus * (total_pct / 200)
+            nb_femmes = total_tranche * (pct_f / total_pct)
+            nb_hommes = total_tranche * (pct_h / total_pct)
+
+            resultats_temp.append((f"individus_{tranche}_f", nb_femmes))
+            resultats_temp.append((f"individus_{tranche}_h", nb_hommes))
+
+        resultats = {}
+        total_arrondi = 0
+        restes = []
+
+        for cle, valeur in resultats_temp:
+            arrondi = int(valeur)
+            resultats[cle] = arrondi
+            total_arrondi += arrondi
+            restes.append((cle, valeur - arrondi))
+
+        difference = individus - total_arrondi
+
+        # Donner toutes les unités restantes à une seule tranche, celle avec le plus grand reste décimal
+        if difference > 0:
+            cle_cible, _ = max(restes, key=lambda x: x[1])
+            resultats[cle_cible] += difference
+
+        return resultats
+        
     def create(self, validated_data):
         code_site = validated_data.pop('code_site', None)
         concerne_nouveau_site = validated_data.get('concerne_nouveau_site', False)
@@ -54,24 +113,31 @@ class FormProfilSiteSerializer(serializers.ModelSerializer):
         
         # Se rassure que nombre_individus == au somme de tous les groupes d'age et sexe
         nombre_individus = validated_data.get("nombre_individus", 0)
-        nombre_individus_groupes = (
-            validated_data.get('individus_0_4_f', 0) +
-            validated_data.get('individus_5_11_f', 0) +
-            validated_data.get('individus_12_17_f', 0) +
-            validated_data.get('individus_18_24_f', 0) +
-            validated_data.get('individus_25_59_f', 0) +
-            validated_data.get('individus_60_f', 0) +
-            validated_data.get('individus_0_4_h', 0) +
-            validated_data.get('individus_5_11_h', 0) +
-            validated_data.get('individus_12_17_h', 0) +
-            validated_data.get('individus_18_24_h', 0) +
-            validated_data.get('individus_25_59_h', 0) +
-            validated_data.get('individus_60_h', 0)
-        )
-        if nombre_individus != nombre_individus_groupes:
-            raise serializers.ValidationError({
-                "nombre_individus": "Le nombre d'individus doit correspondre au somme de tous les groupes d'age et sexe."
-            })
+        if nombre_individus > 0:
+            demographic_data = self.extract_demographic_data(nombre_individus)
+            validated_data.update(demographic_data)
+        else:
+            # Si nombre_individus est 0, on met tous les groupes à 0
+            demographic_data = self.extract_demographic_data(0)
+            validated_data.update(demographic_data)
+        # nombre_individus_groupes = (
+        #     validated_data.get('individus_0_4_f', 0) +
+        #     validated_data.get('individus_5_11_f', 0) +
+        #     validated_data.get('individus_12_17_f', 0) +
+        #     validated_data.get('individus_18_24_f', 0) +
+        #     validated_data.get('individus_25_59_f', 0) +
+        #     validated_data.get('individus_60_f', 0) +
+        #     validated_data.get('individus_0_4_h', 0) +
+        #     validated_data.get('individus_5_11_h', 0) +
+        #     validated_data.get('individus_12_17_h', 0) +
+        #     validated_data.get('individus_18_24_h', 0) +
+        #     validated_data.get('individus_25_59_h', 0) +
+        #     validated_data.get('individus_60_h', 0)
+        # )
+        # if nombre_individus != nombre_individus_groupes:
+        #     raise serializers.ValidationError({
+        #         "nombre_individus": "Le nombre d'individus doit correspondre au somme de tous les groupes d'age et sexe."
+        #     })
         
         # Cas d’un nouveau site
         

@@ -159,6 +159,173 @@ def options_choices(request):
         )
         return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+@api_view(["POST", "PUT"])
+def charger_data_profil_site(request):
+    try:
+        data = request.data
+        for item in data:
+            code_site = item.get("code_site")
+            site_with_code = SiteDeplace.objects.filter(code_site=code_site).first()
+            if not site_with_code:
+                print(f"Aucun site trouvé avec le code '{code_site}'.")
+                continue
+            
+            profil_data = {
+                "code_site": site_with_code.code_site,
+                "enqueteur": item.get("enqueteur", None),
+                "organisation": item.get("organisation", None),
+                "nombre_menages": item.get("nombre_menages", None),
+                "nombre_individus": item.get("nombre_individus", None),
+                "individus_0_4_f": item.get("individus_0_4_f", 0) or 0,
+                "individus_5_11_f": item.get("individus_5_11_f", 0) or 0,
+                "individus_12_17_f": item.get("individus_12_17_f", 0) or 0,
+                "individus_18_24_f": item.get("individus_18_24_f", 0) or 0,
+                "individus_25_59_f": item.get("individus_25_59_f", 0) or 0,
+                "individus_60_f": item.get("individus_60_f", 0) or 0,
+                "individus_0_4_h": item.get("individus_0_4_h", 0) or 0,
+                "individus_5_11_h": item.get("individus_5_11_h", 0) or 0,
+                "individus_12_17_h": item.get("individus_12_17_h", 0) or 0,
+                "individus_18_24_h": item.get("individus_18_24_h", 0) or 0,
+                "individus_25_59_h": item.get("individus_25_59_h", 0) or 0,
+                "individus_60_h": item.get("individus_60_h", 0) or 0,
+                "statut_site": item.get("statut_site", None),
+            }
+            gestion_administration_data = item.get("gestion_administration", {})
+            organisation_fonctionnement_data = item.get("organisation_fonctionnement", {})
+            vulnerabilites_data = item.get("vulnerabilites", {})
+            abris_ame_data = item.get("abris_ame", {})
+            wash_data = item.get("wash", {})
+            sante_data = item.get("sante", {})
+            securite_alimentaire_data = item.get("securite_alimentaire", {})
+            protection_data = item.get("protection", {})
+            education_data = item.get("education", {})
+            moyens_subsistance_data = item.get("moyens_subsistance", {})
+            cartographie_acteurs_services_data = item.get("cartographie_acteurs_services", {})
+            
+            profil_serializer = FormProfilSiteSerializer(data=profil_data)
+            if profil_serializer.is_valid():
+                profil_serializer.save()
+                
+                if gestion_administration_data:
+                    gestion_administration_data["code_site"] = code_site
+                    gestion_serializer = FormGestionAdminProfilSiteSerializer(data=gestion_administration_data)
+                    if gestion_serializer.is_valid():
+                        gestion_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour gestion_administration du site '{code_site}': {gestion_serializer.errors}")
+                        return Response(gestion_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if organisation_fonctionnement_data:
+                    organisation_fonctionnement_data["code_site"] = code_site
+                    orga_serializer = FormOrganisationInterneFonctionnementProfilSiteSerializer(data=organisation_fonctionnement_data)
+                    if orga_serializer.is_valid():
+                        orga_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour organisation_fonctionnement du site '{code_site}': {orga_serializer.errors}")
+                        return Response(orga_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if vulnerabilites_data:
+                    vulnerabilites_data["code_site"] = code_site
+                    vulnerabilites_serializer = FormVulnerabilitePopulationProfilSiteSerializer(data=vulnerabilites_data)
+                    if vulnerabilites_serializer.is_valid():
+                        vulnerabilites_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour vulnerabilites du site '{code_site}': {vulnerabilites_serializer.errors}")
+                        return Response(vulnerabilites_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if abris_ame_data:
+                    abris_ame_data["code_site"] = code_site
+                    abris_ame_serializer = FormAbrisAmesProfilSiteSerializer(data=abris_ame_data)
+                    if abris_ame_serializer.is_valid():
+                        abris_ame_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour abris_ame du site '{code_site}': {abris_ame_serializer.errors}")
+                        return Response(abris_ame_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if wash_data:
+                    wash_data["code_site"] = code_site
+                    wash_serializer = FormWashProfilSiteSerializer(data=wash_data)
+                    if wash_serializer.is_valid():
+                        wash_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour wash du site '{code_site}': {wash_serializer.errors}")
+                        return Response(wash_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if sante_data:
+                    sante_data["code_site"] = code_site
+                    sante_serializer = FormSanteProfilSiteSerializer(data=sante_data)
+                    if sante_serializer.is_valid():
+                        sante_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour sante du site '{code_site}': {sante_serializer.errors}")
+                        return Response(sante_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if securite_alimentaire_data:
+                    securite_alimentaire_data["code_site"] = code_site
+                    securite_alimentaire_serializer = FormSecuriteAlimentaireProfilSiteSerializer(data=securite_alimentaire_data)
+                    if securite_alimentaire_serializer.is_valid():
+                        securite_alimentaire_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour securite_alimentaire du site '{code_site}': {securite_alimentaire_serializer.errors}")
+                        return Response(securite_alimentaire_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if protection_data:
+                    protection_data["code_site"] = code_site
+                    protection_serializer = FormProtectionProfilSiteSerializer(data=protection_data)
+                    if protection_serializer.is_valid():
+                        protection_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour protection du site '{code_site}': {protection_serializer.errors}")
+                        return Response(protection_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if education_data:
+                    education_data["code_site"] = code_site
+                    education_serializer = FormEducationProfilSiteSerializer(data=education_data)
+                    if education_serializer.is_valid():
+                        education_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour education du site '{code_site}': {education_serializer.errors}")
+                        return Response(education_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if moyens_subsistance_data:
+                    moyens_subsistance_data["code_site"] = code_site
+                    moyens_subsistance_serializer = FormMoyenSubsistanceBesoinPrioritaireProfilSiteSerializer(data=moyens_subsistance_data)
+                    if moyens_subsistance_serializer.is_valid():
+                        moyens_subsistance_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour moyens_subsistance du site '{code_site}': {moyens_subsistance_serializer.errors}")
+                        return Response(moyens_subsistance_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if cartographie_acteurs_services_data:
+                    cartographie_acteurs_services_data["code_site"] = code_site
+                    cartographie_serializer = FormCartographieServiceActeurProfilSiteSerializer(data=cartographie_acteurs_services_data)
+                    if cartographie_serializer.is_valid():
+                        cartographie_serializer.save()
+                    else:
+                        print(f"Erreur de validation pour cartographie_acteurs_services du site '{code_site}': {cartographie_serializer.errors}")
+                        return Response(cartographie_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                # response = api_response(
+                #     True,
+                #     "Le profil a bien été crée",
+                #     data=profil_serializer.data,
+                # )
+                # return Response(response, status=status.HTTP_201_CREATED)
+            else:
+                print(f"Erreur de validation pour le profil du site '{code_site}': {profil_serializer.errors}")
+                return Response(profil_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        response = api_response(
+            True,
+            "Les données ont été chargées avec succès",
+        )
+        return Response(response, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        print(f"Error --> {e}")
+        response = api_response(
+            False, "Un probleme est survenu, veuillez reessayer plus tard"
+        )
+        return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 @api_view(["GET"])
 def get_profil_site_by_code(request, code_site: str):
     try:
