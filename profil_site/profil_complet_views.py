@@ -70,7 +70,9 @@ from .customs_models.secteurs.wash_site import (
     WashProfilSiteSerializer,
     FormWashProfilSiteSerializer,
 )
+import logging
 
+logger = logging.getLogger(__name__)
 
 def api_response(success, message, data=None):
     return {"success": success, "message": message, "data": data}
@@ -164,11 +166,13 @@ def charger_data_profil_site(request):
     try:
         from .data import DATA
         # data = request.data
+        logger.info(f"Loading data...")
         for item in DATA:
             code_site = item.get("code_site")
+            logger.info(f"Processing item: {code_site}")
             site_with_code = SiteDeplace.objects.filter(code_site=code_site).first()
             if not site_with_code:
-                print(f"Aucun site trouvé avec le code '{code_site}'.")
+                logger.error(f"Aucun site trouvé avec le code '{code_site}'.")
                 continue
             
             profil_data = {
@@ -212,8 +216,9 @@ def charger_data_profil_site(request):
                     gestion_serializer = FormGestionAdminProfilSiteSerializer(data=gestion_administration_data)
                     if gestion_serializer.is_valid():
                         gestion_serializer.save()
+                        logger.info(f"Saved gestion_administration for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour gestion_administration du site '{code_site}': {gestion_serializer.errors}")
+                        logger.error(f"Erreur de validation pour gestion_administration du site '{code_site}': {gestion_serializer.errors}")
                         return Response(gestion_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if organisation_fonctionnement_data:
@@ -221,8 +226,9 @@ def charger_data_profil_site(request):
                     orga_serializer = FormOrganisationInterneFonctionnementProfilSiteSerializer(data=organisation_fonctionnement_data)
                     if orga_serializer.is_valid():
                         orga_serializer.save()
+                        logger.info(f"Saved organisation_fonctionnement for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour organisation_fonctionnement du site '{code_site}': {orga_serializer.errors}")
+                        logger.error(f"Erreur de validation pour organisation_fonctionnement du site '{code_site}': {orga_serializer.errors}")
                         return Response(orga_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if vulnerabilites_data:
@@ -230,8 +236,9 @@ def charger_data_profil_site(request):
                     vulnerabilites_serializer = FormVulnerabilitePopulationProfilSiteSerializer(data=vulnerabilites_data)
                     if vulnerabilites_serializer.is_valid():
                         vulnerabilites_serializer.save()
+                        logger.info(f"Saved vulnerabilites for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour vulnerabilites du site '{code_site}': {vulnerabilites_serializer.errors}")
+                        logger.error(f"Erreur de validation pour vulnerabilites du site '{code_site}': {vulnerabilites_serializer.errors}")
                         return Response(vulnerabilites_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if abris_ame_data:
@@ -239,8 +246,9 @@ def charger_data_profil_site(request):
                     abris_ame_serializer = FormAbrisAmesProfilSiteSerializer(data=abris_ame_data)
                     if abris_ame_serializer.is_valid():
                         abris_ame_serializer.save()
+                        logger.info(f"Saved abris_ame for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour abris_ame du site '{code_site}': {abris_ame_serializer.errors}")
+                        logger.error(f"Erreur de validation pour abris_ame du site '{code_site}': {abris_ame_serializer.errors}")
                         return Response(abris_ame_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if wash_data:
@@ -248,8 +256,9 @@ def charger_data_profil_site(request):
                     wash_serializer = FormWashProfilSiteSerializer(data=wash_data)
                     if wash_serializer.is_valid():
                         wash_serializer.save()
+                        logger.info(f"Saved wash for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour wash du site '{code_site}': {wash_serializer.errors}")
+                        logger.error(f"Erreur de validation pour wash du site '{code_site}': {wash_serializer.errors}")
                         return Response(wash_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if sante_data:
@@ -257,8 +266,9 @@ def charger_data_profil_site(request):
                     sante_serializer = FormSanteProfilSiteSerializer(data=sante_data)
                     if sante_serializer.is_valid():
                         sante_serializer.save()
+                        logger.info(f"Saved sante for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour sante du site '{code_site}': {sante_serializer.errors}")
+                        logger.error(f"Erreur de validation pour sante du site '{code_site}': {sante_serializer.errors}")
                         return Response(sante_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if securite_alimentaire_data:
@@ -266,8 +276,9 @@ def charger_data_profil_site(request):
                     securite_alimentaire_serializer = FormSecuriteAlimentaireProfilSiteSerializer(data=securite_alimentaire_data)
                     if securite_alimentaire_serializer.is_valid():
                         securite_alimentaire_serializer.save()
+                        logger.info(f"Saved securite_alimentaire for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour securite_alimentaire du site '{code_site}': {securite_alimentaire_serializer.errors}")
+                        logger.error(f"Erreur de validation pour securite_alimentaire du site '{code_site}': {securite_alimentaire_serializer.errors}")
                         return Response(securite_alimentaire_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if protection_data:
@@ -275,8 +286,9 @@ def charger_data_profil_site(request):
                     protection_serializer = FormProtectionProfilSiteSerializer(data=protection_data)
                     if protection_serializer.is_valid():
                         protection_serializer.save()
+                        logger.info(f"Saved protection for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour protection du site '{code_site}': {protection_serializer.errors}")
+                        logger.error(f"Erreur de validation pour protection du site '{code_site}': {protection_serializer.errors}")
                         return Response(protection_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if education_data:
@@ -284,8 +296,9 @@ def charger_data_profil_site(request):
                     education_serializer = FormEducationProfilSiteSerializer(data=education_data)
                     if education_serializer.is_valid():
                         education_serializer.save()
+                        logger.info(f"Saved education for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour education du site '{code_site}': {education_serializer.errors}")
+                        logger.error(f"Erreur de validation pour education du site '{code_site}': {education_serializer.errors}")
                         return Response(education_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if moyens_subsistance_data:
@@ -293,8 +306,9 @@ def charger_data_profil_site(request):
                     moyens_subsistance_serializer = FormMoyenSubsistanceBesoinPrioritaireProfilSiteSerializer(data=moyens_subsistance_data)
                     if moyens_subsistance_serializer.is_valid():
                         moyens_subsistance_serializer.save()
+                        logger.info(f"Saved moyens_subsistance for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour moyens_subsistance du site '{code_site}': {moyens_subsistance_serializer.errors}")
+                        logger.error(f"Erreur de validation pour moyens_subsistance du site '{code_site}': {moyens_subsistance_serializer.errors}")
                         return Response(moyens_subsistance_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
                 if cartographie_acteurs_services_data:
@@ -302,18 +316,12 @@ def charger_data_profil_site(request):
                     cartographie_serializer = FormCartographieServiceActeurProfilSiteSerializer(data=cartographie_acteurs_services_data)
                     if cartographie_serializer.is_valid():
                         cartographie_serializer.save()
+                        logger.info(f"Saved cartographie_acteurs_services for site: {code_site}")
                     else:
-                        print(f"Erreur de validation pour cartographie_acteurs_services du site '{code_site}': {cartographie_serializer.errors}")
+                        logger.error(f"Erreur de validation pour cartographie_acteurs_services du site '{code_site}': {cartographie_serializer.errors}")
                         return Response(cartographie_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                
-                # response = api_response(
-                #     True,
-                #     "Le profil a bien été crée",
-                #     data=profil_serializer.data,
-                # )
-                # return Response(response, status=status.HTTP_201_CREATED)
             else:
-                print(f"Erreur de validation pour le profil du site '{code_site}': {profil_serializer.errors}")
+                logger.error(f"Erreur de validation pour le profil du site '{code_site}': {profil_serializer.errors}")
                 return Response(profil_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         response = api_response(
             True,
@@ -321,7 +329,7 @@ def charger_data_profil_site(request):
         )
         return Response(response, status=status.HTTP_201_CREATED)
     except Exception as e:
-        print(f"Error --> {e}")
+        logger.error(f"Error --> {e}")
         response = api_response(
             False, "Un probleme est survenu, veuillez reessayer plus tard"
         )
