@@ -11,9 +11,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le reste du projet
 COPY . .
 
-# Appliquer les migrations de la base de données
-RUN python manage.py migrate
-
 # Collecter les fichiers statiques
 RUN python manage.py collectstatic --noinput
 
